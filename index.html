@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Развертывание нейросайта — Инструкция</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230c0f1a'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='sans-serif' font-weight='800' font-size='20' fill='%236c5ce7'%3EA%3C/text%3E%3C/svg%3E">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -78,11 +79,24 @@
     margin-bottom: 12px;
     line-height: 1.2;
   }
+  .hero-logo {
+    margin-bottom: 18px;
+  }
+  .hero-logo svg {
+    height: 40px;
+    width: auto;
+    filter: drop-shadow(0 0 20px rgba(237, 24, 73, 0.3));
+  }
   .hero p {
     font-size: 1.05rem;
     color: var(--text-muted);
-    max-width: 580px;
+    max-width: 620px;
     margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
   /* ===== TABS ===== */
@@ -500,6 +514,77 @@
   }
   .scroll-top.visible { opacity: 1; }
 
+  /* ===== COPY BTN ===== */
+  .code-copy-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 12px 0;
+  }
+  .code-copy-wrap .code-block {
+    flex: 1;
+    margin: 0;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    padding-right: 14px;
+    display: flex;
+    align-items: center;
+  }
+  .code-copy-wrap .code-block code {
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    color: var(--green);
+  }
+  .code-copy-btn {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-left: none;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 14px 16px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-family: var(--font-mono);
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    min-height: 50px;
+  }
+  .code-copy-btn:hover {
+    color: var(--accent-light);
+    background: var(--surface-2);
+  }
+  .code-copy-btn.copied {
+    color: var(--green);
+  }
+
+  /* ===== HERO BTN ===== */
+  .hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px 14px;
+    color: var(--green);
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .hero-btn:hover {
+    border-color: var(--green);
+    background: var(--green-glow);
+  }
+  .hero-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 640px) {
     .hero { padding: 40px 16px 28px; }
@@ -519,9 +604,15 @@
 <!-- ===== HERO ===== -->
 <section class="hero">
   <div class="hero-content">
+    <div class="hero-logo">
+      <svg width="120" height="51" viewBox="0 0 120 51" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M64.4761 1L49.3778 11.4271L54.1837 18.7554L59.2874 15.3635V25.0369H53.163V33.2027H75.7041V25.0369H69.6223V4.55946L64.4761 1ZM91.1426 18.923C91.6955 19.1323 92.3335 19.258 93.1841 19.3836C93.9922 19.4674 94.8853 19.6767 95.7784 19.9699C96.7141 20.263 97.5647 20.598 98.3728 21.0586C99.1809 21.4774 99.8613 22.1474 100.414 23.1106C100.967 24.0318 101.222 25.1625 101.222 26.4607C101.222 27.8426 100.925 29.0151 100.287 30.062C99.6487 31.1089 98.8406 31.8627 97.8199 32.3652C96.7992 32.8677 95.7784 33.2446 94.7152 33.4958C93.6519 33.7471 92.5461 33.8727 91.4403 33.8727C86.2091 33.8727 82.8067 32.1558 81.2756 28.7638L88.2931 25.665C88.846 27.1307 89.8667 27.8426 91.3978 27.8426C92.376 27.8426 92.8864 27.5494 92.8864 26.9213C92.8864 26.5444 92.5036 26.2513 91.7806 26.0419C91.0576 25.8325 90.1644 25.5813 89.1862 25.33C88.1655 25.0787 87.1448 24.7437 86.124 24.325C85.1033 23.9062 84.2102 23.2362 83.4872 22.2312C82.7641 21.268 82.3814 20.0536 82.3814 18.588C82.3814 16.2429 83.2745 14.4422 85.1033 13.1441C86.9321 11.8459 89.0161 11.2178 91.3978 11.2178C96.1612 11.2178 99.3084 13.0184 100.84 16.6617L94.2048 19.0067C93.6944 17.7923 92.8864 17.206 91.7806 17.206C90.7598 17.206 90.3345 17.5411 90.3345 18.1273C90.3345 18.4623 90.5897 18.7555 91.1426 18.923ZM114.449 19.3417H119L118.957 11.7622H114.407V2.50757L106.368 8.11896V11.7622H103.306V19.2999H106.368V24.3669C106.368 28.0938 107.347 30.6483 109.261 32.0302C111.217 33.454 114.449 33.8308 119 33.2027V26.0838C118.022 26.1675 117.171 26.1675 116.491 26.1257C115.81 26.0838 115.3 25.8744 114.96 25.5394C114.619 25.2044 114.449 24.66 114.449 23.9481V19.3417Z" fill="#ED1849"></path>
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M13.8649 11.2178C16.7995 11.2178 19.1812 12.3066 21.0525 14.4422C22.9239 16.5779 23.817 19.2999 23.817 22.5243C23.817 25.7906 22.8813 28.4707 21.0525 30.6064C19.1812 32.7421 16.7995 33.8308 13.8649 33.8308C11.3556 33.8308 9.44174 32.9933 8.03824 31.3183V33.2446H0V8.24457L8.03824 2.59131V13.7722C9.39921 12.0553 11.3556 11.2178 13.8649 11.2178ZM9.1015 25.4138C9.82452 26.1675 10.7602 26.5863 11.9085 26.5863C13.0568 26.5863 13.9925 26.2094 14.7155 25.4138C15.4385 24.66 15.7788 23.6968 15.7788 22.5243C15.7788 21.3937 15.4385 20.4305 14.7155 19.6349C13.9925 18.8811 13.0568 18.4623 11.9085 18.4623C10.7602 18.4623 9.82452 18.8392 9.1015 19.6349C8.37849 20.3886 8.03824 21.3518 8.03824 22.5243C8.03824 23.655 8.37849 24.6181 9.1015 25.4138ZM79.5318 11.4271L74.6833 18.7555L71.8338 16.8292V6.10889L79.5318 11.4271ZM37.9371 27.3819C35.683 27.3819 34.1944 26.67 33.5139 25.2463V25.2044H47.9743C48.1869 24.325 48.3145 23.3618 48.3145 22.4406C48.3145 19.2161 47.2512 16.536 45.1247 14.4004C42.9982 12.2647 40.2763 11.2178 36.9589 11.2178C33.599 11.2178 30.8345 12.3066 28.6655 14.4841C26.4964 16.6617 25.3906 19.3417 25.3906 22.6081C25.3906 25.8325 26.4964 28.5126 28.7505 30.6483C31.0046 32.7839 33.9818 33.8308 37.6819 33.8308C41.6798 33.8308 44.742 32.6583 46.911 30.3551L41.6372 26C40.4889 26.9213 39.2555 27.3819 37.9371 27.3819ZM40.7016 20.1374H33.3863C34.0243 18.4205 35.3002 17.5829 37.1715 17.5829C39.0429 17.5829 40.1912 18.4205 40.7016 20.1374Z" fill="white"></path>
+      </svg>
+    </div>
     <div class="hero-badge">Пошаговая инструкция</div>
     <h1>Развертывание нейросайта</h1>
-    <p>Размещение сайта, созданного нейросетью, на сервере с помощью скрипта <a href="https://github.com/Mmitekk/autodeploy/blob/main/autodeploy.py" target="_blank" style="background:var(--surface-2);padding:2px 8px;border-radius:4px;color:var(--green);font-family:var(--font-mono);text-decoration:none;border-bottom:1px dashed var(--green);">autodeploy.py</a></p>
+    <p>Размещение сайта, созданного нейросетью, на сервере с помощью скрипта autodeploy.py <a href="https://raw.githubusercontent.com/Mmitekk/autodeploy/main/autodeploy.py" download="autodeploy.py" class="hero-btn" title="Скачать autodeploy.py"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Скачать</a></p>
   </div>
 </section>
 
@@ -634,9 +725,9 @@
       <div class="step-body">
         <p>Подключитесь к серверу и запустите скрипт. Он задаст несколько вопросов, а всё остальное сделает автоматически: установит нужные программы, соберёт сайт, запустит его и настроит обновления.</p>
 
-        <div class="code-label">Запуск</div>
-        <div class="code-block">
-          <span class="prompt">root@server</span>:<span class="comment">/var/www</span>$ python3 autodeploy.py
+        <div class="code-copy-wrap">
+          <div class="code-block"><code>python3 autodeploy.py</code></div>
+          <button class="code-copy-btn" onclick="copyCmd(this)" title="Скопировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать</button>
         </div>
 
         <ol class="substeps">
@@ -830,9 +921,9 @@
       <div class="step-body">
         <p>SSH на сервер, запуск скрипта. Из 15 блоков только 4 требуют ручного ввода (блоки 1, 3, 4, 7), остальные &mdash; автоматические. Скрипт: определяет свободный порт, генерирует <code>ecosystem.config.js</code> для PM2, настраивает Nginx/Apache прокси, создаёт <code>.env</code> и <code>.gitignore</code>, выполняет <code>npm install && next build && pm2 start</code>, инициализирует Git, пушит в GitHub, запускает webhook-сервер.</p>
 
-        <div class="code-label">Terminal</div>
-        <div class="code-block">
-          <span class="prompt">root@server</span>:<span class="comment">/var/www</span>$ python3 autodeploy.py
+        <div class="code-copy-wrap">
+          <div class="code-block"><code>python3 autodeploy.py</code></div>
+          <button class="code-copy-btn" onclick="copyCmd(this)" title="Скопировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать</button>
         </div>
 
         <ol class="substeps">
@@ -1122,6 +1213,17 @@
 <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#9650;</button>
 
 <script>
+function copyCmd(btn) {
+  var code = btn.parentElement.querySelector('code');
+  navigator.clipboard.writeText(code.textContent).then(function() {
+    btn.classList.add('copied');
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Скопировано';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать';
+    }, 2000);
+  });
+}
   // Tabs
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
