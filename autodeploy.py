@@ -1857,7 +1857,9 @@ def main():
         console.print("Выполняется автоматически...")
         result = executor.execute_block(block_num)
         print_result(result)
-        if not result.success:
+        # Блок 14 (финальные проверки) — информационный, не блокирует
+        # последующие блоки. Прерываем только при ошибке в критичных блоках.
+        if not result.success and block_num != 14:
             break
 
     # ── Финальная сводка ─────────────────────────────────────────────────
