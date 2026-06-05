@@ -933,9 +933,61 @@ class DeployExecutor:
                 return self._add_result(12, "repo_check", "Проверка репозитория и токена", True,
                                         f"Репозиторий {repo_name} доступен")
             elif status == "404":
-                return self._add_result(12, "repo_check", "Проверка репозитория и токена", False,
-                                        f"Репозиторий {repo_name} не найден",
-                                        "Проверьте имя и права токена")
+                # Репозиторий не найден — пробуем создать
+                console.print(
+                    f"  [yellow]Репозиторий {repo_name} не найден, "
+                    f"пробую создать...[/yellow]"
+                )
+                repo_private = self.ctx.get("repo_private", True)
+                create_payload = json.dumps({
+                    "name": repo_name.split("/")[-1] if "/" in repo_name else repo_name,
+                    "private": repo_private,
+                    "description": f"AutoDeploy: {repo_name}"
+                })
+                tmp_dir = os.path.join(site_path, "tmp")
+                os.makedirs(tmp_dir, exist_ok=True)
+                create_file = os.path.join(tmp_dir, "_create_repo.json")
+                with open(create_file, 'w') as f:
+                    f.write(create_payload)
+
+                rc2, out2, err2 = run_cmd(
+                    f"curl -s -w '\\n%{{http_code}}' -X POST "
+                    f"-H 'Authorization: token {github_token}' "
+                    f"-H 'Accept: application/vnd.github.v3+json' "
+                    f"-H 'Content-Type: application/json' "
+                    f"https://api.github.com/user/repos "
+                    f"-d @{create_file}",
+                    timeout=15
+                )
+                try:
+                    os.remove(create_file)
+                except OSError:
+                    pass
+
+                create_lines = out2.strip().split('\n') if out2 else []
+                create_status = create_lines[-1].strip() if create_lines else "000"
+
+                if create_status == "201":
+                    console.print(f"  [green]Репозиторий {repo_name} создан![/green]")
+                    # Устанавливаем remote
+                    run_cmd(
+                        f"cd {site_path} && git remote set-url origin "
+                        f"https://{github_token}@github.com/{repo_name}.git 2>/dev/null || "
+                        f"git remote add origin https://{github_token}@github.com/{repo_name}.git"
+                    )
+                    return self._add_result(12, "repo_check", "Проверка репозитория и токена", True,
+                                            f"Репозиторий {repo_name} создан")
+                else:
+                    create_body = '\n'.join(create_lines[:-1]) if len(create_lines) > 1 else out2 or ""
+                    error_msg = ""
+                    try:
+                        error_data = json.loads(create_body)
+                        error_msg = error_data.get("message", str(error_data))
+                    except (json.JSONDecodeError, TypeError):
+                        error_msg = create_body[:200]
+                    return self._add_result(12, "repo_check", "Проверка репозитория и токена", False,
+                                            f"Не удалось создать {repo_name}",
+                                            f"GitHub API: HTTP {create_status} — {error_msg[:200]}")
             elif status == "401":
                 return self._add_result(12, "repo_check", "Проверка репозитория и токена", False,
                                         "Токен GitHub неверен или истёк",
@@ -1254,11 +1306,51 @@ class DeployExecutor:
         webhook_script = f"""#!/usr/bin/env node
 const http = require('http');
 const {{ exec }} = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 const PORT = {webhook_port};
 const SECRET = '{secret}';
 const PROJECT = '{project_name}';
 const SITE_PATH = '{site_path}';
+const ENV_FILE = path.join(SITE_PATH, '.env');
+
+// Сохраняем .env перед git pull чтобы не потерять настройки
+function backupEnv() {{
+  try {{
+    if (fs.existsSync(ENV_FILE)) {{
+      return fs.readFileSync(ENV_FILE, 'utf8');
+    }}
+  }} catch (e) {{}}
+  return null;
+}}
+
+// Восстанавливаем .env после git pull если он был изменён
+function restoreEnv(originalContent) {{
+  try {{
+    if (originalContent && fs.existsSync(ENV_FILE)) {{
+      const current = fs.readFileSync(ENV_FILE, 'utf8');
+      if (current !== originalContent) {{
+        fs.writeFileSync(ENV_FILE, originalContent, 'utf8');
+        console.log('[webhook] .env restored after git pull (was overwritten)');
+      }}
+    }}
+  }} catch (e) {{
+    console.error('[webhook] Failed to restore .env:', e.message);
+  }}
+}}
+
+// Копируем .env в standalone-директорию
+function copyEnvToStandalone() {{
+  try {{
+    const standaloneDir = path.join(SITE_PATH, '.next', 'standalone');
+    const dstEnv = path.join(standaloneDir, '.env');
+    if (fs.existsSync(standaloneDir) && fs.existsSync(ENV_FILE)) {{
+      fs.copyFileSync(ENV_FILE, dstEnv);
+      console.log('[webhook] .env copied to .next/standalone/');
+    }}
+  }} catch (e) {{}}
+}}
 
 const server = http.createServer((req, res) => {{
   if (req.method === 'POST' && req.url === '/webhook') {{
@@ -1268,11 +1360,53 @@ const server = http.createServer((req, res) => {{
       try {{
         const payload = JSON.parse(body);
         console.log(`[${{new Date().toISOString()}}] Webhook received for ${{payload.repository?.name || 'unknown'}}`);
-        exec(`cd ${{SITE_PATH}} && git pull origin main && npm install && NODE_OPTIONS='--max-old-space-size=4096' npm run build && pm2 restart ${{PROJECT}}`,
-          (error, stdout, stderr) => {{
-            if (error) console.error('Deploy error:', error);
-            else console.log('Deploy success:', stdout);
+
+        // 1. Бэкапим .env
+        const envBackup = backupEnv();
+
+        // 2. git pull
+        exec(`cd ${{SITE_PATH}} && git pull origin main 2>&1`, (pullErr, pullOut, pullErr2) => {{
+          if (pullErr) {{
+            console.error('git pull error:', pullErr.message);
+            // Всё равно пробуем продолжить
+          }} else {{
+            console.log('git pull OK');
+          }}
+
+          // 3. Восстанавливаем .env если git его перезаписал
+          restoreEnv(envBackup);
+
+          // 4. npm install
+          exec(`cd ${{SITE_PATH}} && npm install --legacy-peer-deps 2>&1`, (npmErr, npmOut, npmErr2) => {{
+            if (npmErr) {{
+              console.error('npm install error:', npmErr.message);
+            }} else {{
+              console.log('npm install OK');
+            }}
+
+            // 5. next build
+            exec(`cd ${{SITE_PATH}} && NODE_OPTIONS='--max-old-space-size=4096' npm run build 2>&1`, (buildErr, buildOut, buildErr2) => {{
+              if (buildErr) {{
+                console.error('build error:', buildErr.message);
+              }} else {{
+                console.log('build OK');
+              }}
+
+              // 6. Копируем .env в standalone
+              copyEnvToStandalone();
+
+              // 7. pm2 restart с обновлением env
+              exec(`pm2 restart ${{PROJECT}} --update-env 2>&1`, (pm2Err, pm2Out) => {{
+                if (pm2Err) {{
+                  console.error('pm2 restart error:', pm2Err.message);
+                }} else {{
+                  console.log('Deploy completed successfully');
+                }}
+              }});
+            }});
           }});
+        }});
+
         res.writeHead(200, {{'Content-Type': 'application/json'}});
         res.end(JSON.stringify({{ status: 'ok', message: 'Deploy started' }}));
       }} catch(e) {{
