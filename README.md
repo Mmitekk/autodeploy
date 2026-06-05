@@ -42,7 +42,7 @@ scp -r ./site-files/* root@your-server:/var/www/your-site.ru/
 
 ### 2. Создаём репозиторий на GitHub
 
-Создайте приватный репозиторий и Fine-grained personal access token с правами **Contents** и **Webhooks**.
+Создайте приватный репозиторий и Fine-grained personal access token с правами **Contents**, **Webhooks** и **Administration**.
 
 ### 3. Запускаем скрипт
 
