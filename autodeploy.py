@@ -933,61 +933,10 @@ class DeployExecutor:
                 return self._add_result(12, "repo_check", "Проверка репозитория и токена", True,
                                         f"Репозиторий {repo_name} доступен")
             elif status == "404":
-                # Репозиторий не найден — пробуем создать
-                console.print(
-                    f"  [yellow]Репозиторий {repo_name} не найден, "
-                    f"пробую создать...[/yellow]"
-                )
-                repo_private = self.ctx.get("repo_private", True)
-                create_payload = json.dumps({
-                    "name": repo_name.split("/")[-1] if "/" in repo_name else repo_name,
-                    "private": repo_private,
-                    "description": f"AutoDeploy: {repo_name}"
-                })
-                tmp_dir = os.path.join(site_path, "tmp")
-                os.makedirs(tmp_dir, exist_ok=True)
-                create_file = os.path.join(tmp_dir, "_create_repo.json")
-                with open(create_file, 'w') as f:
-                    f.write(create_payload)
-
-                rc2, out2, err2 = run_cmd(
-                    f"curl -s -w '\\n%{{http_code}}' -X POST "
-                    f"-H 'Authorization: token {github_token}' "
-                    f"-H 'Accept: application/vnd.github.v3+json' "
-                    f"-H 'Content-Type: application/json' "
-                    f"https://api.github.com/user/repos "
-                    f"-d @{create_file}",
-                    timeout=15
-                )
-                try:
-                    os.remove(create_file)
-                except OSError:
-                    pass
-
-                create_lines = out2.strip().split('\n') if out2 else []
-                create_status = create_lines[-1].strip() if create_lines else "000"
-
-                if create_status == "201":
-                    console.print(f"  [green]Репозиторий {repo_name} создан![/green]")
-                    # Устанавливаем remote
-                    run_cmd(
-                        f"cd {site_path} && git remote set-url origin "
-                        f"https://{github_token}@github.com/{repo_name}.git 2>/dev/null || "
-                        f"git remote add origin https://{github_token}@github.com/{repo_name}.git"
-                    )
-                    return self._add_result(12, "repo_check", "Проверка репозитория и токена", True,
-                                            f"Репозиторий {repo_name} создан")
-                else:
-                    create_body = '\n'.join(create_lines[:-1]) if len(create_lines) > 1 else out2 or ""
-                    error_msg = ""
-                    try:
-                        error_data = json.loads(create_body)
-                        error_msg = error_data.get("message", str(error_data))
-                    except (json.JSONDecodeError, TypeError):
-                        error_msg = create_body[:200]
-                    return self._add_result(12, "repo_check", "Проверка репозитория и токена", False,
-                                            f"Не удалось создать {repo_name}",
-                                            f"GitHub API: HTTP {create_status} — {error_msg[:200]}")
+                # Репозиторий не найден — пользователь должен создать вручную
+                return self._add_result(12, "repo_check", "Проверка репозитория и токена", False,
+                                        f"Репозиторий {repo_name} не найден на GitHub",
+                                        "Создайте репозиторий вручную на github.com, затем повторите проверку")
             elif status == "401":
                 return self._add_result(12, "repo_check", "Проверка репозитория и токена", False,
                                         "Токен GitHub неверен или истёк",
@@ -1870,6 +1819,7 @@ def main():
         console.print()
         console.print("[bold red]Не удалось получить доступ к репозиторию.[/bold red]")
         console.print("Возможные причины: неверный токен, нет прав, репозиторий не найден.")
+        console.print("[yellow]Если репозиторий ещё не создан — создайте его вручную на github.com[/yellow]")
         console.print()
         console.print("  [green][1][/green] — Только токен")
         console.print("  [green][2][/green] — Владельца и имя репозитория")
