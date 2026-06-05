@@ -7,288 +7,77 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230c0f1a'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='sans-serif' font-weight='800' font-size='20' fill='%236c5ce7'%3EA%3C/text%3E%3C/svg%3E">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #0c0f1a;
-    --surface: #141827;
-    --surface-2: #1a1f35;
-    --surface-3: #222845;
-    --border: #2a3055;
-    --text: #e4e8f7;
-    --text-muted: #8891b5;
-    --accent: #6c5ce7;
-    --accent-light: #a29bfe;
-    --accent-glow: rgba(108, 92, 231, 0.25);
-    --green: #00b894;
-    --green-glow: rgba(0, 184, 148, 0.2);
-    --orange: #fdcb6e;
-    --red: #ff7675;
-    --blue: #74b9ff;
-    --radius: 12px;
-    --radius-sm: 8px;
+    --bg: #0c0f1a; --surface: #141827; --surface-2: #1a1f35; --surface-3: #222845;
+    --border: #2a3055; --text: #e4e8f7; --text-muted: #8891b5;
+    --accent: #6c5ce7; --accent-light: #a29bfe; --accent-glow: rgba(108, 92, 231, 0.25);
+    --green: #00b894; --green-glow: rgba(0, 184, 148, 0.2);
+    --orange: #fdcb6e; --red: #ff7675; --blue: #74b9ff;
+    --radius: 12px; --radius-sm: 8px;
     --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
     --font-mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
   }
-
   html { scroll-behavior: smooth; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.7; min-height: 100vh; }
 
-  body {
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.7;
-    min-height: 100vh;
-  }
-
-  /* ===== HERO ===== */
-  .hero {
-    position: relative;
-    padding: 60px 24px 40px;
-    text-align: center;
-    overflow: hidden;
-  }
-  .hero::before {
-    content: '';
-    position: absolute;
-    top: -40%; left: 50%; transform: translateX(-50%);
-    width: 800px; height: 800px;
-    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
+  .hero { position: relative; padding: 60px 24px 40px; text-align: center; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: -40%; left: 50%; transform: translateX(-50%); width: 800px; height: 800px; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%); pointer-events: none; z-index: 0; }
   .hero-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
-  .hero-badge {
-    display: inline-block;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    padding: 6px 20px;
-    font-size: 13px;
-    color: var(--accent-light);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-  }
-  .hero h1 {
-    font-size: clamp(1.8rem, 5vw, 3rem);
-    font-weight: 800;
-    background: linear-gradient(135deg, #fff 0%, var(--accent-light) 50%, var(--green) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 12px;
-    line-height: 1.2;
-  }
-  .hero-logo {
-    margin-bottom: 18px;
-  }
-  .hero-logo svg {
-    height: 40px;
-    width: auto;
-    filter: drop-shadow(0 0 20px rgba(237, 24, 73, 0.3));
-  }
-  .hero p {
-    font-size: 1.05rem;
-    color: var(--text-muted);
-    max-width: 620px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
+  .hero-badge { display: inline-block; background: var(--surface-2); border: 1px solid var(--border); border-radius: 100px; padding: 6px 20px; font-size: 13px; color: var(--accent-light); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; }
+  .hero h1 { font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 800; background: linear-gradient(135deg, #fff 0%, var(--accent-light) 50%, var(--green) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 12px; line-height: 1.2; }
+  .hero-logo { margin-bottom: 18px; }
+  .hero-logo svg { height: 40px; width: auto; filter: drop-shadow(0 0 20px rgba(237, 24, 73, 0.3)); }
+  .hero p { font-size: 1.05rem; color: var(--text-muted); max-width: 620px; margin: 0 auto; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
 
-  /* ===== TABS ===== */
-  .tabs-wrap {
-    max-width: 920px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
-  .tabs-nav {
-    display: flex;
-    gap: 4px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 0;
-  }
-  .tab-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-family: var(--font);
-    font-size: 0.95rem;
-    font-weight: 600;
-    padding: 14px 24px;
-    cursor: pointer;
-    position: relative;
-    transition: color 0.25s;
-  }
-  .tab-btn::after {
-    content: '';
-    position: absolute;
-    bottom: -1px; left: 0; right: 0;
-    height: 2px;
-    background: var(--accent);
-    border-radius: 2px 2px 0 0;
-    transform: scaleX(0);
-    transition: transform 0.25s;
-  }
+  .tabs-wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+  .tabs-nav { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+  .tab-btn { background: none; border: none; color: var(--text-muted); font-family: var(--font); font-size: 0.95rem; font-weight: 600; padding: 14px 24px; cursor: pointer; position: relative; transition: color 0.25s; }
+  .tab-btn::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent); border-radius: 2px 2px 0 0; transform: scaleX(0); transition: transform 0.25s; }
   .tab-btn:hover { color: var(--text); }
   .tab-btn.active { color: var(--accent-light); }
   .tab-btn.active::after { transform: scaleX(1); }
-
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
-  /* ===== NAV ===== */
-  .nav {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: rgba(12, 15, 26, 0.85);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border);
-    padding: 12px 24px;
-  }
-  .nav-inner {
-    max-width: 920px;
-    margin: 0 auto;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .nav a {
-    color: var(--text-muted);
-    text-decoration: none;
-    padding: 6px 14px;
-    border-radius: 100px;
-    font-size: 0.82rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    border: 1px solid transparent;
-  }
-  .nav a:hover {
-    color: var(--accent-light);
-    border-color: var(--accent);
-    background: var(--accent-glow);
-  }
+  .nav { position: sticky; top: 0; z-index: 50; background: rgba(12, 15, 26, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); padding: 12px 24px; }
+  .nav-inner { max-width: 920px; margin: 0 auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .nav a { color: var(--text-muted); text-decoration: none; padding: 6px 14px; border-radius: 100px; font-size: 0.82rem; font-weight: 500; transition: all 0.2s; border: 1px solid transparent; }
+  .nav a:hover { color: var(--accent-light); border-color: var(--accent); background: var(--accent-glow); }
 
-  /* ===== CONTAINER ===== */
   .container { max-width: 920px; margin: 0 auto; padding: 32px 24px 80px; }
 
-  /* ===== STEP CARD ===== */
-  .step {
-    position: relative;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 28px 32px;
-    margin-bottom: 28px;
-    transition: border-color 0.3s;
-  }
+  .step { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 32px; margin-bottom: 28px; transition: border-color 0.3s; }
   .step:hover { border-color: var(--accent); }
-  .step::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 4px; height: 100%;
-    border-radius: var(--radius) 0 0 var(--radius);
-  }
+  .step::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; border-radius: var(--radius) 0 0 var(--radius); }
   .step[data-color="purple"]::before { background: var(--accent); }
   .step[data-color="green"]::before  { background: var(--green); }
   .step[data-color="orange"]::before { background: var(--orange); }
   .step[data-color="blue"]::before   { background: var(--blue); }
   .step[data-color="red"]::before    { background: var(--red); }
-
-  .step-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 18px;
-  }
-  .step-number {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px; height: 48px;
-    border-radius: 50%;
-    font-weight: 800;
-    font-size: 1.2rem;
-    flex-shrink: 0;
-  }
+  .step-header { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  .step-number { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; font-weight: 800; font-size: 1.2rem; flex-shrink: 0; }
   .step[data-color="purple"] .step-number { background: var(--accent); color: #fff; }
   .step[data-color="green"]  .step-number { background: var(--green);  color: #fff; }
   .step[data-color="orange"] .step-number { background: var(--orange); color: #1a1f35; }
   .step[data-color="blue"]   .step-number { background: var(--blue);   color: #1a1f35; }
   .step[data-color="red"]    .step-number { background: var(--red);    color: #fff; }
-
   .step-title { font-size: 1.3rem; font-weight: 700; }
   .step-subtitle { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
-
   .step-body p { margin-bottom: 12px; color: var(--text); line-height: 1.75; }
   .step-body p:last-child { margin-bottom: 0; }
 
-  /* ===== TAGS ===== */
-  .tag {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 100px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    vertical-align: middle;
-  }
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px; vertical-align: middle; }
   .tag-auto  { background: var(--green-glow); color: var(--green); }
   .tag-manual { background: var(--accent-glow); color: var(--accent-light); }
 
-  /* ===== CODE ===== */
-  .code-block {
-    background: #0d1117;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 14px 18px;
-    margin: 12px 0;
-    overflow-x: auto;
-    font-family: var(--font-mono);
-    font-size: 0.88rem;
-    line-height: 1.6;
-    color: #c9d1d9;
-  }
+  .code-block { background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px; margin: 12px 0; overflow-x: auto; font-family: var(--font-mono); font-size: 0.88rem; line-height: 1.6; color: #c9d1d9; }
   .code-block .comment { color: #6a737d; }
   .code-block .prompt  { color: var(--green); }
   .code-block .input   { color: var(--orange); font-weight: 600; }
-
-  .code-label {
-    display: inline-block;
-    background: var(--surface-3);
-    border: 1px solid var(--border);
-    border-radius: 6px 6px 0 0;
-    padding: 4px 12px;
-    font-size: 0.75rem;
-    font-family: var(--font-mono);
-    color: var(--text-muted);
-    margin-bottom: -1px;
-    position: relative;
-    z-index: 1;
-  }
+  .code-label { display: inline-block; background: var(--surface-3); border: 1px solid var(--border); border-radius: 6px 6px 0 0; padding: 4px 12px; font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted); margin-bottom: -1px; position: relative; z-index: 1; }
   .code-label + .code-block { border-radius: 0 var(--radius-sm) var(--radius-sm) var(--radius-sm); }
 
-  /* ===== CONSOLE ===== */
-  .console-output {
-    background: #0a0e14;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 18px;
-    margin: 12px 0;
-    font-family: var(--font-mono);
-    font-size: 0.82rem;
-    line-height: 1.65;
-    overflow-x: auto;
-    max-height: 600px;
-    overflow-y: auto;
-    color: #b3bce0;
-  }
+  .console-output { background: #0a0e14; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px; margin: 12px 0; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.65; overflow-x: auto; max-height: 600px; overflow-y: auto; color: #b3bce0; }
   .console-output .c-green  { color: var(--green); }
   .console-output .c-accent { color: var(--accent-light); }
   .console-output .c-orange { color: var(--orange); }
@@ -297,305 +86,246 @@
   .console-output .c-dim    { color: #6a737d; }
   .console-output .c-ok     { color: #2ecc71; font-weight: 600; }
 
-  /* ===== SUB-STEPS ===== */
-  .substeps {
-    list-style: none;
-    padding: 0;
-    margin: 12px 0;
-  }
-  .substeps li {
-    position: relative;
-    padding: 12px 16px 12px 52px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    margin-bottom: 10px;
-    line-height: 1.65;
-  }
-  .substeps li::before {
-    content: attr(data-num);
-    position: absolute;
-    left: 14px; top: 12px;
-    width: 28px; height: 28px;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 50%;
-    font-size: 0.8rem;
-    font-weight: 700;
-  }
+  .substeps { list-style: none; padding: 0; margin: 12px 0; }
+  .substeps li { position: relative; padding: 12px 16px 12px 52px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 10px; line-height: 1.65; }
+  .substeps li::before { content: attr(data-num); position: absolute; left: 14px; top: 12px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; border-radius: 50%; font-size: 0.8rem; font-weight: 700; }
   .substeps li strong { color: var(--accent-light); }
-  .substeps li code {
-    background: #0d1117;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: var(--font-mono);
-    font-size: 0.85em;
-    color: var(--orange);
-  }
+  .substeps li code { background: #0d1117; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85em; color: var(--orange); }
 
-  /* ===== INFO BOXES ===== */
-  .info-box {
-    padding: 14px 18px;
-    border-radius: var(--radius-sm);
-    margin: 12px 0;
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-  }
-  .info-box.tip {
-    background: rgba(0, 184, 148, 0.08);
-    border: 1px solid rgba(0, 184, 148, 0.25);
-  }
-  .info-box.warning {
-    background: rgba(253, 203, 110, 0.08);
-    border: 1px solid rgba(253, 203, 110, 0.25);
-  }
-  .info-box.info {
-    background: rgba(116, 185, 255, 0.08);
-    border: 1px solid rgba(116, 185, 255, 0.25);
-  }
+  .info-box { padding: 14px 18px; border-radius: var(--radius-sm); margin: 12px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .info-box.tip { background: rgba(0, 184, 148, 0.08); border: 1px solid rgba(0, 184, 148, 0.25); }
+  .info-box.warning { background: rgba(253, 203, 110, 0.08); border: 1px solid rgba(253, 203, 110, 0.25); }
+  .info-box.info { background: rgba(116, 185, 255, 0.08); border: 1px solid rgba(116, 185, 255, 0.25); }
+  .info-box.success { background: rgba(0, 184, 148, 0.08); border: 1px solid rgba(0, 184, 148, 0.25); }
+  .info-box.error { background: rgba(255, 118, 117, 0.08); border: 1px solid rgba(255, 118, 117, 0.25); }
   .info-box .icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
-  .info-box.tip .icon     { color: var(--green); }
+  .info-box.tip .icon, .info-box.success .icon { color: var(--green); }
   .info-box.warning .icon { color: var(--orange); }
-  .info-box.info .icon    { color: var(--blue); }
+  .info-box.info .icon { color: var(--blue); }
+  .info-box.error .icon { color: var(--red); }
   .info-box p { margin: 0; font-size: 0.92rem; line-height: 1.65; }
   .info-box p strong { color: var(--text); }
 
-  /* ===== VIDEO ===== */
-  .video-wrapper {
-    position: relative;
-    padding-bottom: 56.25%;
-    height: 0;
-    overflow: hidden;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: #0a0e14;
-    margin: 12px 0;
-  }
-  .video-wrapper video {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    border: none;
-  }
+  .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid var(--border); background: #0a0e14; margin: 12px 0; }
+  .video-wrapper video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
 
-  /* ===== SUMMARY TABLE ===== */
-  .summary-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.88rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    margin: 14px 0;
-  }
-  .summary-table th {
-    background: var(--surface-3);
-    color: var(--text);
-    font-weight: 700;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 12px 14px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-  }
-  .summary-table td {
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-  }
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin: 14px 0; }
+  .summary-table th { background: var(--surface-3); color: var(--text); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  .summary-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
   .summary-table tr:last-child td { border-bottom: none; }
   .summary-table tr:hover td { background: var(--surface-2); }
   .summary-table .td-num { color: var(--accent-light); font-weight: 700; width: 40px; }
   .summary-table .td-block { color: var(--text); }
   .summary-table .td-status { width: 80px; }
-  .status-ok {
-    display: inline-block;
-    background: var(--green-glow);
-    color: var(--green);
-    padding: 2px 10px;
-    border-radius: 100px;
-    font-size: 0.78rem;
-    font-weight: 600;
-  }
+  .status-ok { display: inline-block; background: var(--green-glow); color: var(--green); padding: 2px 10px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; }
   .summary-table .td-result { color: var(--text-muted); font-size: 0.84rem; }
 
-  /* ===== BLOCKS TABLE (tech) ===== */
-  .blocks-grid {
-    display: grid;
-    grid-template-columns: 48px 1fr 90px 1fr;
-    gap: 0;
-    font-size: 0.85rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    margin: 14px 0;
-  }
-  .blocks-grid .cell {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-  }
-  .blocks-grid .row { display: contents; }
-  .blocks-grid .row:last-child .cell { border-bottom: none; }
-  .blocks-grid .cell-num { justify-content: center; font-weight: 700; color: var(--accent-light); background: var(--surface-2); }
-  .blocks-grid .cell-title { color: var(--text); }
-  .blocks-grid .cell-type { justify-content: center; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
-  .blocks-grid .cell-type.auto   { color: var(--green); }
-  .blocks-grid .cell-type.manual  { color: var(--accent-light); }
-  .blocks-grid .cell-type.check  { color: var(--orange); }
-  .blocks-grid .cell-desc { color: var(--text-muted); font-size: 0.82rem; }
-  .blocks-grid .header .cell { background: var(--surface-3); font-weight: 700; color: var(--text); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
-
-  /* ===== FLOW ===== */
-  .flow-diagram {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    justify-content: center;
-    margin: 18px 0;
-    padding: 18px;
-  }
-  .flow-node {
-    padding: 10px 18px;
-    border-radius: var(--radius-sm);
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-align: center;
-    border: 1px solid;
-    white-space: nowrap;
-  }
+  .flow-diagram { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; margin: 18px 0; padding: 18px; }
+  .flow-node { padding: 10px 18px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; text-align: center; border: 1px solid; white-space: nowrap; }
   .flow-node.manual { background: rgba(108, 92, 231, 0.12); border-color: var(--accent); color: var(--accent-light); }
   .flow-node.auto   { background: rgba(0, 184, 148, 0.10); border-color: var(--green); color: var(--green); }
   .flow-arrow { color: var(--text-muted); font-size: 1.2rem; }
 
-  /* ===== KEY-VALUES ===== */
-  .kv-grid {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 6px 20px;
-    font-size: 0.9rem;
-    margin: 12px 0;
-  }
-  .kv-grid .k { color: var(--text-muted); font-weight: 500; }
-  .kv-grid .v { color: var(--text); font-family: var(--font-mono); font-size: 0.88rem; }
-
-  /* ===== FOOTER ===== */
-  .footer {
-    text-align: center;
-    padding: 40px 24px;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    border-top: 1px solid var(--border);
-    max-width: 920px;
-    margin: 0 auto;
-  }
-
-  /* ===== SCROLL TOP ===== */
-  .scroll-top {
-    position: fixed;
-    bottom: 24px; right: 24px;
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2rem;
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s;
-    z-index: 100;
-    box-shadow: 0 4px 20px var(--accent-glow);
-  }
+  .footer { text-align: center; padding: 40px 24px; color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid var(--border); max-width: 920px; margin: 0 auto; }
+  .scroll-top { position: fixed; bottom: 24px; right: 24px; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; border: none; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; z-index: 100; box-shadow: 0 4px 20px var(--accent-glow); }
   .scroll-top.visible { opacity: 1; }
 
-  /* ===== COPY BTN ===== */
-  .code-copy-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin: 12px 0;
-  }
-  .code-copy-wrap .code-block {
-    flex: 1;
-    margin: 0;
-    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-    padding-right: 14px;
-    display: flex;
-    align-items: center;
-  }
-  .code-copy-wrap .code-block code {
-    font-family: var(--font-mono);
-    font-size: 0.92rem;
-    color: var(--green);
-  }
-  .code-copy-btn {
-    background: #0d1117;
-    border: 1px solid var(--border);
-    border-left: none;
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    padding: 14px 16px;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 0.82rem;
-    font-family: var(--font-mono);
-    transition: all 0.2s;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    height: 100%;
-    min-height: 50px;
-  }
-  .code-copy-btn:hover {
-    color: var(--accent-light);
-    background: var(--surface-2);
-  }
-  .code-copy-btn.copied {
-    color: var(--green);
-  }
+  .code-copy-wrap { display: flex; align-items: center; gap: 0; margin: 12px 0; }
+  .code-copy-wrap .code-block { flex: 1; margin: 0; border-radius: var(--radius-sm) 0 0 var(--radius-sm); padding-right: 14px; display: flex; align-items: center; }
+  .code-copy-wrap .code-block code { font-family: var(--font-mono); font-size: 0.92rem; color: var(--green); }
+  .code-copy-btn { background: #0d1117; border: 1px solid var(--border); border-left: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 14px 16px; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; font-family: var(--font-mono); transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px; height: 100%; min-height: 50px; }
+  .code-copy-btn:hover { color: var(--accent-light); background: var(--surface-2); }
+  .code-copy-btn.copied { color: var(--green); }
 
-  /* ===== HERO BTN ===== */
-  .hero-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    padding: 5px 14px;
-    color: var(--green);
-    font-family: var(--font-mono);
-    font-size: 0.88rem;
-    text-decoration: none;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-  .hero-btn:hover {
-    border-color: var(--green);
-    background: var(--green-glow);
-  }
-  .hero-btn svg {
-    width: 14px;
-    height: 14px;
-  }
+  .hero-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 100px; padding: 5px 14px; color: var(--green); font-family: var(--font-mono); font-size: 0.88rem; text-decoration: none; transition: all 0.2s; white-space: nowrap; }
+  .hero-btn:hover { border-color: var(--green); background: var(--green-glow); }
+  .hero-btn svg { width: 14px; height: 14px; }
 
-  /* ===== RESPONSIVE ===== */
+  /* DEVELOPER TAB */
+  .dev-layout { display: flex; gap: 0; min-height: calc(100vh - 60px); }
+  .dev-sidebar { width: 280px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 0; z-index: 40; }
+  .dev-sidebar::-webkit-scrollbar { width: 4px; }
+  .dev-sidebar::-webkit-scrollbar-track { background: transparent; }
+  .dev-sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .dev-main { flex: 1; min-width: 0; padding: 24px 32px 80px; max-width: 900px; }
+
+  .dev-progress-wrap { padding: 0 20px 16px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .dev-progress-label { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .dev-progress-bar { height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+  .dev-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 3px; transition: width 0.4s ease; width: 0%; }
+
+  .dev-sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; font-size: 0.85rem; }
+  .dev-sidebar-item:hover { background: var(--surface-2); }
+  .dev-sidebar-item.active { background: var(--surface-2); border-left-color: var(--accent-light); }
+  .dev-sidebar-item.done { border-left-color: var(--green); }
+  .dev-sidebar-icon { width: 20px; text-align: center; flex-shrink: 0; font-size: 0.9rem; }
+  .dev-sidebar-item.done .dev-sidebar-icon { color: var(--green); }
+  .dev-sidebar-item.active .dev-sidebar-icon { color: var(--accent-light); }
+  .dev-sidebar-item.pending .dev-sidebar-icon { color: var(--text-muted); }
+  .dev-sidebar-num { color: var(--text-muted); font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); min-width: 22px; }
+  .dev-sidebar-item.active .dev-sidebar-num { color: var(--accent-light); }
+  .dev-sidebar-item.done .dev-sidebar-num { color: var(--green); }
+  .dev-sidebar-title { color: var(--text-muted); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dev-sidebar-item.active .dev-sidebar-title { color: var(--text); font-weight: 600; }
+  .dev-sidebar-item.done .dev-sidebar-title { color: var(--text); }
+  .dev-sidebar-pulse { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; animation: devPulse 1.5s ease-in-out infinite; }
+  @keyframes devPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .dev-sidebar-item.active .dev-sidebar-pulse { background: var(--accent-light); }
+  .dev-sidebar-item.pending .dev-sidebar-pulse, .dev-sidebar-item.done .dev-sidebar-pulse { display: none; }
+
+  .dev-header { margin-bottom: 32px; }
+  .dev-header-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 100px; padding: 5px 16px; margin-bottom: 16px; }
+  .dev-header-badge-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: devPulse 1.5s ease-in-out infinite; }
+  .dev-header-badge-text { font-size: 0.78rem; font-weight: 600; color: var(--accent-light); letter-spacing: 0.5px; text-transform: uppercase; }
+  .dev-header-title { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 800; margin-bottom: 8px; }
+  .dev-header-title-accent { background: linear-gradient(135deg, #fff, var(--accent-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .dev-header-title-sub { color: var(--green); }
+  .dev-header-subtitle { color: var(--text-muted); font-size: 1rem; margin-bottom: 16px; line-height: 1.6; }
+  .dev-tech-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .dev-tech-badge { padding: 4px 12px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted); }
+  .dev-run-cmd { display: flex; align-items: center; margin-bottom: 12px; }
+  .dev-run-cmd-input { flex: 1; background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm) 0 0 var(--radius-sm); padding: 12px 16px; font-family: var(--font-mono); font-size: 0.92rem; color: var(--green); }
+  .dev-run-cmd-btn { background: #0d1117; border: 1px solid var(--border); border-left: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 12px 16px; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; font-family: var(--font-mono); transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .dev-run-cmd-btn:hover { color: var(--accent-light); background: var(--surface-2); }
+  .dev-run-cmd-btn.copied { color: var(--green); }
+  .dev-header-tip { color: var(--text-muted); font-size: 0.88rem; font-style: italic; }
+
+  .dev-block { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 28px; overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s; }
+  .dev-block:hover { border-color: var(--accent); }
+  .dev-block.active-block { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
+  .dev-block-accent { position: absolute; top: 0; left: 0; width: 100%; height: 3px; }
+  .dev-block-accent.manual { background: linear-gradient(90deg, var(--accent), var(--accent-light)); }
+  .dev-block-accent.auto { background: linear-gradient(90deg, var(--green), #00d2a8); }
+  .dev-block-accent.check { background: linear-gradient(90deg, var(--orange), #ffeaa7); }
+  .dev-block-bg { position: absolute; top: 0; left: 0; right: 0; height: 120px; pointer-events: none; }
+  .dev-block-bg.manual { background: linear-gradient(180deg, rgba(108,92,231,0.08), transparent); }
+  .dev-block-bg.auto { background: linear-gradient(180deg, rgba(0,184,148,0.06), transparent); }
+  .dev-block-bg.check { background: linear-gradient(180deg, rgba(253,203,110,0.06), transparent); }
+
+  .dev-block-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; position: relative; z-index: 1; }
+  .dev-block-header-left { display: flex; align-items: center; gap: 12px; }
+  .dev-block-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .dev-block.manual .dev-block-icon { background: var(--accent-glow); color: var(--accent-light); }
+  .dev-block.auto .dev-block-icon { background: var(--green-glow); color: var(--green); }
+  .dev-block.check .dev-block-icon { background: rgba(253,203,110,0.15); color: var(--orange); }
+  .dev-block-num { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 1px; }
+  .dev-block-type { font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+  .dev-block.manual .dev-block-type { background: var(--accent-glow); color: var(--accent-light); }
+  .dev-block.auto .dev-block-type { background: var(--green-glow); color: var(--green); }
+  .dev-block.check .dev-block-type { background: rgba(253,203,110,0.15); color: var(--orange); }
+  .dev-block-title { font-size: 1.15rem; font-weight: 700; margin-top: 4px; }
+  .dev-block-done-btn { padding: 6px 14px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); white-space: nowrap; }
+  .dev-block-done-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+  .dev-block-done-btn.is-done { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+  .dev-block-body { padding: 16px 24px 24px; position: relative; z-index: 1; }
+
+  .dev-prompt { background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; margin: 10px 0; font-family: var(--font-mono); font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+  .dev-prompt-arrow { color: var(--green); font-weight: 700; }
+  .dev-prompt-label { color: var(--text); }
+  .dev-prompt-default { color: var(--text-muted); }
+
+  .dev-yesno { display: flex; align-items: center; gap: 12px; margin: 10px 0; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  .dev-yesno-label { font-size: 0.9rem; font-weight: 600; }
+  .dev-yesno-option { padding: 4px 12px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; }
+  .dev-yesno-yes { background: var(--green-glow); color: var(--green); }
+  .dev-yesno-no { background: var(--surface-3); color: var(--text-muted); }
+
+  .dev-choice { margin: 12px 0; }
+  .dev-choice-option { padding: 14px 18px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; transition: border-color 0.2s; }
+  .dev-choice-option:hover { border-color: var(--accent); }
+  .dev-choice-option.selected { border-color: var(--accent); background: rgba(108,92,231,0.08); }
+  .dev-choice-option-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .dev-choice-option-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; background: var(--accent); color: #fff; flex-shrink: 0; }
+  .dev-choice-option-title { font-weight: 700; font-size: 0.95rem; }
+  .dev-choice-option-desc { color: var(--text-muted); font-size: 0.85rem; margin-left: 34px; }
+
+  .dev-term { background: #0a0e14; border: 1px solid var(--border); border-radius: var(--radius-sm); margin: 12px 0; overflow: hidden; }
+  .dev-term-header { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border); }
+  .dev-term-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dev-term-dot.red { background: #ff5f57; }
+  .dev-term-dot.yellow { background: #febc2e; }
+  .dev-term-dot.green { background: #28c840; }
+  .dev-term-body { padding: 14px 18px; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.65; color: #b3bce0; overflow-x: auto; }
+
+  .dev-code { position: relative; background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); margin: 12px 0; overflow: hidden; }
+  .dev-code-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 14px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border); }
+  .dev-code-lang { font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono); }
+  .dev-code-copy { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.78rem; font-family: var(--font-mono); padding: 2px 8px; border-radius: 4px; transition: all 0.2s; display: flex; align-items: center; gap: 4px; }
+  .dev-code-copy:hover { color: var(--accent-light); background: var(--surface-2); }
+  .dev-code-copy.copied { color: var(--green); }
+  .dev-code-body { padding: 14px 18px; font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.6; color: #c9d1d9; overflow-x: auto; white-space: pre; }
+
+  .dev-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+  .dev-col { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; }
+  .dev-col-title { font-size: 0.85rem; font-weight: 700; color: var(--accent-light); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .dev-col-content { font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; }
+  .dev-col-content code { background: #0d1117; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.82em; color: var(--orange); }
+
+  .dev-checklist { margin: 12px 0; }
+  .dev-check-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; }
+  .dev-check-icon { font-size: 1rem; }
+  .dev-check-icon.ok { color: var(--green); }
+  .dev-check-label { font-size: 0.9rem; }
+  .dev-check-status { margin-left: auto; font-size: 0.78rem; font-weight: 600; }
+  .dev-check-status.ok { color: var(--green); }
+
+  .dev-flow-inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 16px 0; padding: 16px; }
+  .dev-flow-node { padding: 8px 16px; border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 600; border: 1px solid; white-space: nowrap; }
+  .dev-flow-node.green { background: rgba(0,184,148,0.10); border-color: var(--green); color: var(--green); }
+  .dev-flow-node.purple { background: rgba(108,92,231,0.12); border-color: var(--accent); color: var(--accent-light); }
+  .dev-flow-arrow { color: var(--text-muted); font-size: 1.1rem; }
+
+  .dev-substep { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px; }
+  .dev-substep-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; background: var(--green); color: #fff; flex-shrink: 0; }
+  .dev-substep-content { flex: 1; }
+  .dev-substep-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+  .dev-substep-desc { color: var(--text-muted); font-size: 0.83rem; }
+  .dev-substep-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; background: var(--green-glow); color: var(--green); flex-shrink: 0; margin-top: 2px; }
+
+  .dev-http-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .dev-http-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; text-align: center; }
+  .dev-http-code { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 800; margin-bottom: 6px; }
+  .dev-http-code.c200 { color: var(--green); }
+  .dev-http-code.c404 { color: var(--orange); }
+  .dev-http-code.c401 { color: var(--red); }
+  .dev-http-desc { font-size: 0.82rem; color: var(--text-muted); }
+
+  .dev-nav-btns { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .dev-nav-btn { padding: 10px 20px; border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .dev-nav-btn:hover { border-color: var(--accent); color: var(--accent-light); background: var(--accent-glow); }
+  .dev-nav-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+
+  .dev-reset-btn { position: fixed; bottom: 24px; left: 24px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); z-index: 90; display: flex; align-items: center; gap: 6px; }
+  .dev-reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .dev-sidebar-toggle { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 100px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid var(--accent); background: var(--accent); color: #fff; z-index: 90; box-shadow: 0 4px 20px var(--accent-glow); align-items: center; gap: 8px; }
+
+  .dev-summary { margin-top: 40px; padding: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  .dev-summary-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .dev-commands-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.85rem; }
+  .dev-commands-table th { background: var(--surface-3); padding: 10px 14px; text-align: left; border: 1px solid var(--border); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+  .dev-commands-table td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  .dev-commands-table code { font-family: var(--font-mono); font-size: 0.82rem; color: var(--orange); background: #0d1117; padding: 1px 5px; border-radius: 3px; }
+
   @media (max-width: 640px) {
     .hero { padding: 40px 16px 28px; }
     .step { padding: 20px 18px; }
-    .blocks-grid { font-size: 0.78rem; }
-    .blocks-grid .cell { padding: 8px 8px; }
     .nav-inner { gap: 4px; }
     .nav a { padding: 4px 10px; font-size: 0.75rem; }
     .tab-btn { padding: 12px 16px; font-size: 0.88rem; }
     .summary-table { font-size: 0.8rem; }
     .summary-table th, .summary-table td { padding: 8px 10px; }
+  }
+  @media (max-width: 860px) {
+    .dev-layout { flex-direction: column; }
+    .dev-sidebar { width: 100%; position: relative; height: auto; max-height: 0; overflow: hidden; border-right: none; border-bottom: 1px solid var(--border); transition: max-height 0.3s ease; padding: 0; }
+    .dev-sidebar.open { max-height: 1000px; padding: 16px 0; }
+    .dev-sidebar-toggle { display: flex; }
+    .dev-main { padding: 20px 16px 80px; }
+    .dev-cols { grid-template-columns: 1fr; }
+    .dev-http-cards { grid-template-columns: 1fr; }
+    .dev-block-body { padding: 14px 18px 20px; }
+    .dev-block-header { padding: 16px 18px 0; flex-wrap: wrap; gap: 8px; }
   }
 </style>
 </head>
@@ -624,595 +354,732 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!-- TAB 1 — ДЛЯ ПОЛЬЗОВАТЕЛЯ                                                  -->
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- TAB 1 — ДЛЯ ПОЛЬЗОВАТЕЛЯ (UNCHANGED) -->
 <div class="tab-panel active" id="tab-simple">
-
-  <!-- NAV -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="#s1">1. Копирование</a>
-      <a href="#s2">2. Репозиторий</a>
-      <a href="#s3">3. Запуск</a>
-      <a href="#s-summary">Результат</a>
-    </div>
-  </nav>
-
+  <nav class="nav"><div class="nav-inner"><a href="#s1">1. Копирование</a><a href="#s2">2. Репозиторий</a><a href="#s3">3. Запуск</a><a href="#s-summary">Результат</a></div></nav>
   <div class="container">
-
-    <!-- STEP 1 -->
     <div class="step" data-color="purple" id="s1">
-      <div class="step-header">
-        <div class="step-number">1</div>
-        <div>
-          <div class="step-title">Копируем файлы сайта на сервер</div>
-          <div class="step-subtitle">Переносим готовый сайт на хостинг</div>
-        </div>
-      </div>
+      <div class="step-header"><div class="step-number">1</div><div><div class="step-title">Копируем файлы сайта на сервер</div><div class="step-subtitle">Переносим готовый сайт на хостинг</div></div></div>
       <div class="step-body">
         <p>Скопируйте все файлы сайта на сервер в папку, название которой совпадает с вашим доменом. Например, для сайта <code>narkozav7.ru</code> это будет папка <code>/var/www/narkozav7.ru</code>.</p>
         <p>Важно: все файлы должны лежать прямо внутри этой папки, а не в дополнительной подпапке.</p>
-
         <div class="code-label">Команда для копирования</div>
-        <div class="code-block">
-          <span class="comment"># Копируем файлы на сервер</span><br>
-          scp -r ./site-files/* root@your-server:/var/www/narkozav7.ru/
-        </div>
-
-        <div class="info-box tip">
-          <div class="icon">&#10003;</div>
-          <p>Если вы не знаете, как подключиться к серверу &mdash; используйте программу для SSH-доступа (например, PuTTY на Windows или Terminal на Mac) с данными, которые предоставил хостинг.</p>
-        </div>
+        <div class="code-block"><span class="comment"># Копируем файлы на сервер</span><br>scp -r ./site-files/* root@your-server:/var/www/narkozav7.ru/</div>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>Если вы не знаете, как подключиться к серверу &mdash; используйте программу для SSH-доступа (например, PuTTY на Windows или Terminal на Mac) с данными, которые предоставил хостинг.</p></div>
       </div>
     </div>
-
-    <!-- STEP 2 -->
     <div class="step" data-color="green" id="s2">
-      <div class="step-header">
-        <div class="step-number">2</div>
-        <div>
-          <div class="step-title">Создаём репозиторий на GitHub</div>
-          <div class="step-subtitle">Нужен, чтобы нейросеть могла обновлять сайт&ensp;<span class="tag tag-auto">ВИДЕО</span></div>
-        </div>
-      </div>
+      <div class="step-header"><div class="step-number">2</div><div><div class="step-title">Создаём репозиторий на GitHub</div><div class="step-subtitle">Нужен, чтобы нейросеть могла обновлять сайт&ensp;<span class="tag tag-auto">ВИДЕО</span></div></div></div>
       <div class="step-body">
         <p>Репозиторий &mdash; это хранилище кода сайта на GitHub. Благодаря ему нейросеть сможет вносить изменения в сайт и автоматически обновлять его на сервере. Посмотрите видеоинструкцию, а затем выполните шаги ниже.</p>
-
-        <div class="video-wrapper">
-          <video controls preload="metadata">
-            <source src="2026-06-05_12-16-58.mp4" type="video/mp4">
-            Ваш браузер не поддерживает воспроизведение видео.
-          </video>
-        </div>
-
+        <div class="video-wrapper"><video controls preload="metadata"><source src="2026-06-05_12-16-58.mp4" type="video/mp4">Ваш браузер не поддерживает воспроизведение видео.</video></div>
         <ol class="substeps">
-          <li data-num="1">
-            Зайдите на <strong>github.com</strong> и нажмите кнопку <strong>New repository</strong> (новый репозиторий)
-          </li>
-          <li data-num="2">
-            В качестве имени укажите ваш домен, например <code>be6st.ru</code>
-          </li>
-          <li data-num="3">
-            Поставьте галочку <strong>Private</strong> (приватный), чтобы код сайта не был виден посторонним
-          </li>
-          <li data-num="4">
-            Создайте <strong>токен доступа</strong> &mdash; это специальный пароль для скрипта. Для этого: Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; Fine-grained tokens &rarr; Generate new token
-          </li>
+          <li data-num="1">Зайдите на <strong>github.com</strong> и нажмите кнопку <strong>New repository</strong> (новый репозиторий)</li>
+          <li data-num="2">В качестве имени укажите ваш домен, например <code>be6st.ru</code></li>
+          <li data-num="3">Поставьте галочку <strong>Private</strong> (приватный), чтобы код сайта не был виден посторонним</li>
+          <li data-num="4">Создайте <strong>токен доступа</strong> &mdash; это специальный пароль для скрипта. Для этого: Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; Fine-grained tokens &rarr; Generate new token</li>
         </ol>
-
-        <div class="info-box warning">
-          <div class="icon">&#9888;</div>
-          <p><strong>Сохраните токен сразу!</strong> После создания GitHub покажет его только один раз. Без токена скрипт не сможет подключиться к репозиторию. При создании токена убедитесь, что дали ему права на <strong>Contents</strong>, <strong>Webhooks</strong> и <strong>Administration</strong>.</p>
-        </div>
-
-        <div class="info-box info">
-          <div class="icon">&#9432;</div>
-          <p><strong>Как понять, кто владелец репозитория:</strong> посмотрите на ссылку &mdash; например, <code>https://github.com/Mmitekk/be2st.ru</code>. Здесь <strong>Mmitekk</strong> &mdash; это владелец (логин), а <strong>be2st.ru</strong> &mdash; название репозитория. Эти данные понадобятся при запуске скрипта.</p>
-        </div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p><strong>Сохраните токен сразу!</strong> После создания GitHub покажет его только один раз. Без токена скрипт не сможет подключиться к репозиторию. При создании токена убедитесь, что дали ему права на <strong>Contents</strong>, <strong>Webhooks</strong> и <strong>Administration</strong>.</p></div>
+        <div class="info-box info"><div class="icon">&#9432;</div><p><strong>Как понять, кто владелец репозитория:</strong> посмотрите на ссылку &mdash; например, <code>https://github.com/Mmitekk/be2st.ru</code>. Здесь <strong>Mmitekk</strong> &mdash; это владелец (логин), а <strong>be2st.ru</strong> &mdash; название репозитория. Эти данные понадобятся при запуске скрипта.</p></div>
       </div>
     </div>
-
-    <!-- STEP 3 -->
     <div class="step" data-color="orange" id="s3">
-      <div class="step-header">
-        <div class="step-number">3</div>
-        <div>
-          <div class="step-title">Запускаем скрипт развертывания</div>
-          <div class="step-subtitle">Скрипт сам сделает почти всё за вас</div>
-        </div>
-      </div>
+      <div class="step-header"><div class="step-number">3</div><div><div class="step-title">Запускаем скрипт развертывания</div><div class="step-subtitle">Скрипт сам сделает почти всё за вас</div></div></div>
       <div class="step-body">
         <p>Подключитесь к серверу и запустите скрипт. Он задаст несколько вопросов, а всё остальное сделает автоматически: установит нужные программы, соберёт сайт, запустит его и настроит обновления.</p>
-
-        <div class="code-copy-wrap">
-          <div class="code-block"><code>python3 autodeploy.py</code></div>
-          <button class="code-copy-btn" onclick="copyCmd(this)" title="Скопировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать</button>
-        </div>
-
+        <div class="code-copy-wrap"><div class="code-block"><code>python3 autodeploy.py</code></div><button class="code-copy-btn" onclick="copyCmd(this)" title="Скопировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать</button></div>
         <ol class="substeps">
-          <li data-num="1">
-            <strong>Название проекта</strong> &mdash; введите домен вашего сайта, например <code>be6st.ru</code>
-          </li>
-          <li data-num="2">
-            <strong>Путь к сайту</strong> &mdash; полный путь на сервере, например <code>/var/www/be6st.ru</code>
-          </li>
-          <li data-num="3">
-            <strong>Режим запуска</strong> &mdash; введите <code>1</code> (Standalone &mdash; это рекомендуемый режим)
-          </li>
-          <li data-num="4">
-            <strong>Домен и SSL</strong> &mdash; введите ваш домен. Если домен уже привязан к серверу и нужен безопасный протокол (HTTPS) &mdash; нажмите <code>y</code>. Если домен ещё не опубликован &mdash; нажмите <code>n</code>
-          </li>
-          <li data-num="5">
-            <strong>Логин владельца GitHub</strong> &mdash; логин из ссылки на репозиторий (например, <code>Mmitekk</code>)
-          </li>
-          <li data-num="6">
-            <strong>Название репозитория</strong> &mdash; имя репозитория из ссылки (например, <code>be2st.ru</code>)
-          </li>
-          <li data-num="7">
-            <strong>Приватный?</strong> &mdash; нажмите <code>y</code>
-          </li>
-          <li data-num="8">
-            <strong>Токен GitHub</strong> &mdash; вставьте токен, который вы создали на шаге 2
-          </li>
-          <li data-num="9">
-            <strong>Ждите</strong> &mdash; скрипт автоматически установит все зависимости, соберёт сайт, запустит его и настроит автоматические обновления. Это может занять несколько минут
-          </li>
+          <li data-num="1"><strong>Название проекта</strong> &mdash; введите домен вашего сайта, например <code>be6st.ru</code></li>
+          <li data-num="2"><strong>Путь к сайту</strong> &mdash; полный путь на сервере, например <code>/var/www/be6st.ru</code></li>
+          <li data-num="3"><strong>Режим запуска</strong> &mdash; введите <code>1</code> (Standalone &mdash; это рекомендуемый режим)</li>
+          <li data-num="4"><strong>Домен и SSL</strong> &mdash; введите ваш домен. Если домен уже привязан к серверу и нужен безопасный протокол (HTTPS) &mdash; нажмите <code>y</code>. Если домен ещё не опубликован &mdash; нажмите <code>n</code></li>
+          <li data-num="5"><strong>Логин владельца GitHub</strong> &mdash; логин из ссылки на репозиторий (например, <code>Mmitekk</code>)</li>
+          <li data-num="6"><strong>Название репозитория</strong> &mdash; имя репозитория из ссылки (например, <code>be2st.ru</code>)</li>
+          <li data-num="7"><strong>Приватный?</strong> &mdash; нажмите <code>y</code></li>
+          <li data-num="8"><strong>Токен GitHub</strong> &mdash; вставьте токен, который вы создали на шаге 2</li>
+          <li data-num="9"><strong>Ждите</strong> &mdash; скрипт автоматически установит все зависимости, соберёт сайт, запустит его и настроит автоматические обновления. Это может занять несколько минут</li>
         </ol>
-
-        <div class="info-box tip">
-          <div class="icon">&#10003;</div>
-          <p>После завершения скрипта ваш сайт будет доступен по адресу домена. А при каждом обновлении кода в GitHub сайт будет автоматически обновляться на сервере.</p>
-        </div>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>После завершения скрипта ваш сайт будет доступен по адресу домена. А при каждом обновлении кода в GitHub сайт будет автоматически обновляться на сервере.</p></div>
       </div>
     </div>
-
-    <!-- SUMMARY TABLE -->
     <div class="step" data-color="blue" id="s-summary">
-      <div class="step-header">
-        <div class="step-number">&#10003;</div>
-        <div>
-          <div class="step-title">Результат выполнения</div>
-          <div class="step-subtitle">Что вы увидите после успешного завершения скрипта</div>
-        </div>
-      </div>
+      <div class="step-header"><div class="step-number">&#10003;</div><div><div class="step-title">Результат выполнения</div><div class="step-subtitle">Что вы увидите после успешного завершения скрипта</div></div></div>
       <div class="step-body">
         <p>Если все шаги выполнены верно, скрипт покажет таблицу с результатами каждого этапа:</p>
+        <table class="summary-table"><thead><tr><th>#</th><th>Блок</th><th>Статус</th><th>Результат</th></tr></thead><tbody>
+          <tr><td class="td-num">1</td><td class="td-block">Название проекта и путь</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Проект: be6st.ru</td></tr>
+          <tr><td class="td-num">2</td><td class="td-block">Выбор свободного порта</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Порт: 3006</td></tr>
+          <tr><td class="td-num">3</td><td class="td-block">Режим запуска</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Standalone (node server.js)</td></tr>
+          <tr><td class="td-num">4</td><td class="td-block">Домен и SSL</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Домен: be6st.ru, SSL: Нет</td></tr>
+          <tr><td class="td-num">5</td><td class="td-block">Подготовка PM2 конфигурации</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Конфиг создан: Standalone</td></tr>
+          <tr><td class="td-num">6</td><td class="td-block">Конфигурация веб-сервера</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Nginx: конфиг уже настроен</td></tr>
+          <tr><td class="td-num">7</td><td class="td-block">Git-репозиторий</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Репозиторий: Mmitekk/be2st.ru</td></tr>
+          <tr><td class="td-num">8</td><td class="td-block">Поиск файла базы данных</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Найдена БД: db/custom.db</td></tr>
+          <tr><td class="td-num">9</td><td class="td-block">Создание .gitignore</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Создан: /var/www/be6st.ru/.gitignore</td></tr>
+          <tr><td class="td-num">10</td><td class="td-block">Создание .env</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Создан: /var/www/be6st.ru/.env</td></tr>
+          <tr><td class="td-num">11</td><td class="td-block">Сборка и запуск</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Завершена</td></tr>
+          <tr><td class="td-num">12</td><td class="td-block">Проверка репозитория и токена</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Репозиторий Mmitekk/be2st.ru доступен</td></tr>
+          <tr><td class="td-num">13</td><td class="td-block">Первый коммит и пуш</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Коммит: AutoDeploy: initial commit for be6st.ru [2026-06-05 11:21]</td></tr>
+          <tr><td class="td-num">14</td><td class="td-block">Финальные проверки</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Все проверки пройдены</td></tr>
+          <tr><td class="td-num">15</td><td class="td-block">Настройка автодеплоя</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Webhook порт: 9003</td></tr>
+        </tbody></table>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>Если напротив каждого блока стоит <strong>OK</strong> &mdash; сайт успешно развёрнут и доступен по вашему домену!</p></div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        <table class="summary-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Блок</th>
-              <th>Статус</th>
-              <th>Результат</th>
-            </tr>
-          </thead>
+<!-- TAB 2 — ДЛЯ РАЗРАБОТЧИКА -->
+<div class="tab-panel" id="tab-tech">
+  <div class="dev-layout">
+    <!-- Sidebar -->
+    <aside class="dev-sidebar" id="devSidebar">
+      <div class="dev-progress-wrap">
+        <div class="dev-progress-label">
+          <span>Прогресс</span>
+          <span id="devProgressText">0 / 15</span>
+        </div>
+        <div class="dev-progress-bar">
+          <div class="dev-progress-fill" id="devProgressFill"></div>
+        </div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="1" onclick="devScrollToBlock(1)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">01</div>
+        <div class="dev-sidebar-title">Название и путь</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="2" onclick="devScrollToBlock(2)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">02</div>
+        <div class="dev-sidebar-title">Свободный порт</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="3" onclick="devScrollToBlock(3)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">03</div>
+        <div class="dev-sidebar-title">Режим запуска</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="4" onclick="devScrollToBlock(4)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">04</div>
+        <div class="dev-sidebar-title">Домен и SSL</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="5" onclick="devScrollToBlock(5)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">05</div>
+        <div class="dev-sidebar-title">PM2 конфигурация</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="6" onclick="devScrollToBlock(6)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">06</div>
+        <div class="dev-sidebar-title">Веб-сервер</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="7" onclick="devScrollToBlock(7)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">07</div>
+        <div class="dev-sidebar-title">GitHub Token</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="8" onclick="devScrollToBlock(8)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">08</div>
+        <div class="dev-sidebar-title">Поиск БД</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="9" onclick="devScrollToBlock(9)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">09</div>
+        <div class="dev-sidebar-title">.gitignore</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="10" onclick="devScrollToBlock(10)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">10</div>
+        <div class="dev-sidebar-title">.env</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="11" onclick="devScrollToBlock(11)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">11</div>
+        <div class="dev-sidebar-title">Сборка и запуск</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="12" onclick="devScrollToBlock(12)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">12</div>
+        <div class="dev-sidebar-title">Проверка репо</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="13" onclick="devScrollToBlock(13)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">13</div>
+        <div class="dev-sidebar-title">Коммит и пуш</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="14" onclick="devScrollToBlock(14)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">14</div>
+        <div class="dev-sidebar-title">Финальные проверки</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+      <div class="dev-sidebar-item pending" data-block="15" onclick="devScrollToBlock(15)">
+        <div class="dev-sidebar-icon">&#9675;</div>
+        <div class="dev-sidebar-num">15</div>
+        <div class="dev-sidebar-title">Автодеплой</div>
+        <div class="dev-sidebar-pulse"></div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="dev-main">
+      <!-- Header -->
+      <div class="dev-header">
+        <div class="dev-header-badge">
+          <div class="dev-header-badge-dot"></div>
+          <div class="dev-header-badge-text">v8 &middot; PYTHON SCRIPT</div>
+        </div>
+        <div class="dev-header-title">
+          <span class="dev-header-title-accent">AutoDeploy</span>
+          <span class="dev-header-title-sub">Setup</span>
+        </div>
+        <div class="dev-header-subtitle">Пошаговая инструкция для настройки автодеплоя &mdash; Next.js + Prisma + SQLite на VDS</div>
+        <div class="dev-tech-badges">
+          <span class="dev-tech-badge">Next.js</span>
+          <span class="dev-tech-badge">Prisma</span>
+          <span class="dev-tech-badge">SQLite</span>
+          <span class="dev-tech-badge">PM2</span>
+          <span class="dev-tech-badge">Nginx</span>
+          <span class="dev-tech-badge">GitHub</span>
+        </div>
+        <div class="dev-run-cmd">
+          <div class="dev-run-cmd-input">python3 autodeploy.py</div>
+          <button class="dev-run-cmd-btn" onclick="devCopyRun(this)">&#128203; Копировать</button>
+        </div>
+        <div class="dev-header-tip">&#128161; Отвечайте на вопросы скрипта или нажимайте Enter для значения по умолчанию. Ниже &mdash; описание каждого шага с пояснениями.</div>
+      </div>
+
+
+      <div class="dev-block manual" id="devBlock1" data-block="1">
+        <div class="dev-block-accent manual"></div>
+        <div class="dev-block-bg manual"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9997;</div>
+            <div><div class="dev-block-num">БЛОК 01 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Название проекта и путь</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(1, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box info"><div class="icon">&#9432;</div><p>Скрипт автоматически определит структуру проекта Next.js и проверит наличие ключевых файлов</p></div>
+          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Название проекта</span><span class="dev-prompt-default">[my-project]</span></div>
+          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Путь к сайту на сервере</span><span class="dev-prompt-default">[/var/www/my-project]</span></div>
+          <div class="dev-term">
+            <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+            <div class="dev-term-body"><span style="color:#00b894">&#10003;</span> Next.js project detected<br><span style="color:#00b894">&#10003;</span> package.json found<br><span style="color:#00b894">&#10003;</span> next.config.ts found<br><span style="color:#a29bfe">Domain:</span> my-project</div>
+          </div>
+          <div class="info-box warning"><div class="icon">&#9888;</div><p>Если директория не существует, она будет создана автоматически</p></div>
+        </div>
+      </div>
+
+
+      <div class="dev-block auto" id="devBlock2" data-block="2">
+        <div class="dev-block-accent auto"></div>
+        <div class="dev-block-bg auto"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9889;</div>
+            <div><div class="dev-block-num">БЛОК 02 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Выбор свободного порта</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(2, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box info"><div class="icon">&#9432;</div><p>Сканирование портов 3000-9999 для поиска свободного</p></div>
+          <div class="dev-code">
+            <div class="dev-code-header"><span class="dev-code-lang">port scan</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+            <div class="dev-code-body">  Порт 3000 ... занят (ss)
+  Порт 3001 ... занят (socket test)
+  Порт 3002 ... <span style="color:#00b894">свободен</span> &#10003;</div>
+          </div>
+          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Порт для Next.js</span><span class="dev-prompt-default">[3002]</span></div>
+          <div class="info-box tip"><div class="icon">&#10003;</div><p>Один проект &mdash; один порт. PM2 запускает приложение на выбранном порту</p></div>
+        </div>
+      </div>
+
+
+      <div class="dev-block manual" id="devBlock3" data-block="3">
+        <div class="dev-block-accent manual"></div>
+        <div class="dev-block-bg manual"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9997;</div>
+            <div><div class="dev-block-num">БЛОК 03 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Режим запуска</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(3, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box info"><div class="icon">&#9432;</div><p>Проверка output: &laquo;standalone&raquo; в next.config.*</p></div>
+          <div class="dev-choice">
+            <div class="dev-choice-option selected">
+              <div class="dev-choice-option-header"><div class="dev-choice-option-num">1</div><div class="dev-choice-option-title">Standalone (рекомендуется)</div></div>
+              <div class="dev-choice-option-desc">node .next/standalone/server.js &mdash; быстрее, меньше памяти</div>
+            </div>
+            <div class="dev-choice-option">
+              <div class="dev-choice-option-header"><div class="dev-choice-option-num">2</div><div class="dev-choice-option-title">Standard</div></div>
+              <div class="dev-choice-option-desc">npx next start &mdash; требует полный node_modules</div>
+            </div>
+            <div class="dev-choice-option">
+              <div class="dev-choice-option-header"><div class="dev-choice-option-num">3</div><div class="dev-choice-option-title">Автоопределение</div></div>
+              <div class="dev-choice-option-desc">анализ конфига после сборки</div>
+            </div>
+          </div>
+          <div class="dev-code">
+            <div class="dev-code-header"><span class="dev-code-lang">next.config.ts</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+            <div class="dev-code-body">const nextConfig = {
+  output: "standalone",
+};
+export default nextConfig;</div>
+          </div>
+          <div class="info-box warning"><div class="icon">&#9888;</div><p>Если выбран Standalone, но server.js не создан после сборки &mdash; автоматическое переключение на Standard</p></div>
+        </div>
+      </div>
+
+
+      <div class="dev-block manual" id="devBlock4" data-block="4">
+        <div class="dev-block-accent manual"></div>
+        <div class="dev-block-bg manual"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9997;</div>
+            <div><div class="dev-block-num">БЛОК 04 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Домен и SSL</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(4, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Домен сайта (можно пропустить)</span><span class="dev-prompt-default">[localhost]</span></div>
+          <div class="dev-cols">
+            <div class="dev-col">
+              <div class="dev-col-title">&#127760; Если домен указан</div>
+              <div class="dev-col-content">Nginx/Apache vhost с <code>proxy_pass</code><br>SSL через Let&rsquo;s Encrypt<br>Автоматический редирект HTTP&rarr;HTTPS</div>
+            </div>
+            <div class="dev-col">
+              <div class="dev-col-title">&#128187; Если без домена</div>
+              <div class="dev-col-content">Доступ только по <code>http://IP:port</code><br>Apache/Nginx не настраивается<br>SSL недоступен</div>
+            </div>
+          </div>
+          <div class="dev-yesno"><span class="dev-yesno-label">Настроить SSL (Let&rsquo;s Encrypt)?</span><span class="dev-yesno-option dev-yesno-yes">Y</span><span class="dev-yesno-option dev-yesno-no">N (по умолчанию)</span></div>
+          <div class="info-box warning"><div class="icon">&#9888;</div><p>Для SSL домен должен быть привязан к IP сервера через DNS A-запись</p></div>
+        </div>
+      </div>
+
+
+      <div class="dev-block auto" id="devBlock5" data-block="5">
+        <div class="dev-block-accent auto"></div>
+        <div class="dev-block-bg auto"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9889;</div>
+            <div><div class="dev-block-num">БЛОК 05 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Подготовка PM2 конфигурации</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(5, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box info"><div class="icon">&#9432;</div><p>PM2 &mdash; менеджер процессов Node.js. Обеспечивает автозапуск и перезапуск при падении</p></div>
+          <div class="dev-term">
+            <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+            <div class="dev-term-body"><span style="color:#a29bfe">Creating</span> ecosystem.config.js...<br>mode: standalone<br>script: .next/standalone/server.js<br>port: 3002<br><span style="color:#00b894">&#10003; ecosystem.config.js created</span></div>
+          </div>
+          <div class="dev-code">
+            <div class="dev-code-header"><span class="dev-code-lang">ecosystem.config.js</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+            <div class="dev-code-body">module.exports = {
+  apps: [{
+    name: "my-project",
+    script: ".next/standalone/server.js",
+    env: { PORT: 3002, NODE_ENV: "production" },
+    autorestart: true,
+    max_memory_restart: "500M"
+  }]
+};</div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="dev-block auto" id="devBlock6" data-block="6">
+        <div class="dev-block-accent auto"></div>
+        <div class="dev-block-bg auto"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9889;</div>
+            <div><div class="dev-block-num">БЛОК 06 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Конфигурация веб-сервера</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(6, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box info"><div class="icon">&#9432;</div><p>Автоопределение веб-сервера, слушающего порт 80 (Nginx или Apache)</p></div>
+          <div class="dev-cols">
+            <div class="dev-col">
+              <div class="dev-col-title">&#128240; Nginx</div>
+              <div class="dev-col-content"><code>proxy_pass http://127.0.0.1:3002</code><br><code>proxy_set_header Upgrade</code><br><code>alias /.next/static/</code></div>
+            </div>
+            <div class="dev-col">
+              <div class="dev-col-title">&#128240; Apache</div>
+              <div class="dev-col-content"><code>ProxyPass / http://127.0.0.1:3002</code><br><code>ProxyPassReverse</code><br><code>DirectoryIndex</code></div>
+            </div>
+          </div>
+          <div class="dev-term">
+            <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+            <div class="dev-term-body"><span style="color:#a29bfe">Detected:</span> Nginx on port 80<br><span style="color:#a29bfe">Creating</span> /etc/nginx/sites-available/my-project...<br><span style="color:#a29bfe">Enabling</span> site...<br><span style="color:#fdcb6e">Reloading</span> nginx...<br><span style="color:#00b894">&#10003; Nginx configured</span></div>
+          </div>
+          <div class="info-box tip"><div class="icon">&#10003;</div><p>WebSocket прокси настроен автоматически через <code>proxy_set_header Upgrade</code></p></div>
+        </div>
+      </div>
+
+
+      <div class="dev-block manual" id="devBlock7" data-block="7">
+        <div class="dev-block-accent manual"></div>
+        <div class="dev-block-bg manual"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9997;</div>
+            <div><div class="dev-block-num">БЛОК 07 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">GitHub Token &amp; Repository</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(7, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box info"><div class="icon">&#9432;</div><p>Используется только HTTPS + Token (без SSH-ключей)</p></div>
+          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Логин владельца GitHub</span><span class="dev-prompt-default">[]</span></div>
+          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">GitHub Personal Access Token</span><span class="dev-prompt-default">[скрытый ввод]</span></div>
+          <div class="info-box tip"><div class="icon">&#10003;</div><p><strong>Создание Fine-grained токена:</strong><br>1. Settings &rarr; Developer settings &rarr; Personal access tokens<br>2. Fine-grained tokens &rarr; Generate new token<br>3. Выберите Repository access &rarr; All repositories<br>4. Права: Contents (R/W), Webhooks (R/W), Administration (R/W)</p></div>
+          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Название репозитория (owner/repo)</span><span class="dev-prompt-default">[]</span></div>
+          <div class="dev-yesno"><span class="dev-yesno-label">Приватный репозиторий?</span><span class="dev-yesno-option dev-yesno-yes">Y (по умолчанию)</span><span class="dev-yesno-option dev-yesno-no">N</span></div>
+          <div class="info-box warning"><div class="icon">&#9888;</div><p>Fine-grained токены могут вернуть 403 при создании репо через API</p></div>
+        </div>
+      </div>
+
+
+      <div class="dev-block auto" id="devBlock8" data-block="8">
+        <div class="dev-block-accent auto"></div>
+        <div class="dev-block-bg auto"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9889;</div>
+            <div><div class="dev-block-num">БЛОК 08 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Поиск файла базы данных</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(8, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматический поиск *.db файлов в директории проекта (до 3 уровней)</p></div>
+          <div class="dev-term">
+            <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+            <div class="dev-term-body"><span style="color:#a29bfe">Scanning</span> /var/www/my-project/...<br>  Level 1: *.db ... not found<br>  Level 2: db/*.db ... <span style="color:#00b894">found!</span><br><span style="color:#00b894">&#10003;</span> Database: db/custom.db</div>
+          </div>
+          <div class="info-box warning"><div class="icon">&#9888;</div><p>База данных НЕ попадает в Git (*.db в .gitignore)</p></div>
+        </div>
+      </div>
+
+
+      <div class="dev-block auto" id="devBlock9" data-block="9">
+        <div class="dev-block-accent auto"></div>
+        <div class="dev-block-bg auto"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9889;</div>
+            <div><div class="dev-block-num">БЛОК 09 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Создание .gitignore</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(9, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box success"><div class="icon">&#10003;</div><p>Полностью автоматический блок &mdash; без ввода данных</p></div>
+          <div class="dev-code">
+            <div class="dev-code-header"><span class="dev-code-lang">.gitignore</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+            <div class="dev-code-body">node_modules/
+.next/
+*.db
+*.db-journal
+.env
+.env.*
+logs/
+*.log
+deploy-*.sh
+autodeploy.py
+webhook-server.js
+ecosystem.config.js
+.DS_Store</div>
+          </div>
+          <div class="dev-cols">
+            <div class="dev-col">
+              <div class="dev-col-title">&#10003; В Git (исходный код)</div>
+              <div class="dev-col-content"><code>src/</code>, <code>prisma/</code>, <code>public/</code><br><code>package.json</code>, <code>next.config.ts</code><br><code>tsconfig.json</code>, <code>tailwind.config.ts</code></div>
+            </div>
+            <div class="dev-col">
+              <div class="dev-col-title">&#10008; НЕ в Git (секреты, сборка, БД)</div>
+              <div class="dev-col-content"><code>.env</code> &mdash; переменные окружения<br><code>*.db</code> &mdash; база данных<br><code>node_modules/</code>, <code>.next/</code></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="dev-block auto" id="devBlock10" data-block="10">
+        <div class="dev-block-accent auto"></div>
+        <div class="dev-block-bg auto"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9889;</div>
+            <div><div class="dev-block-num">БЛОК 10 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Создание .env</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(10, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box success"><div class="icon">&#10003;</div><p>Полностью автоматический &mdash; создаёт .env на основе параметров</p></div>
+          <div class="dev-code">
+            <div class="dev-code-header"><span class="dev-code-lang">.env</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+            <div class="dev-code-body">APP_NAME=my-project
+PORT=3002
+DATABASE_URL=file:./db/custom.db
+NEXT_PUBLIC_SITE_URL=https://my-project.ru
+SECRET_KEY=a1b2c3d4e5f6...
+ENABLE_SSL=false</div>
+          </div>
+          <div class="info-box warning"><div class="icon">&#9888;</div><p>.env никогда не попадает в Git &mdash; он исключён в .gitignore</p></div>
+        </div>
+      </div>
+
+
+      <div class="dev-block auto" id="devBlock11" data-block="11">
+        <div class="dev-block-accent auto"></div>
+        <div class="dev-block-bg auto"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9889;</div>
+            <div><div class="dev-block-num">БЛОК 11 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Git Init + Remote + Build + PM2 Start</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(11, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="dev-substep">
+            <div class="dev-substep-num">1</div>
+            <div class="dev-substep-content"><div class="dev-substep-title">Создание директорий</div><div class="dev-substep-desc">logs/, public/, tmp/ &mdash; необходимые для работы директории</div></div>
+            <div class="dev-substep-badge">AUTO</div>
+          </div>
+          <div class="dev-substep">
+            <div class="dev-substep-num">2</div>
+            <div class="dev-substep-content"><div class="dev-substep-title">Git init</div><div class="dev-substep-desc">Инициализация локального Git-репозитория в директории проекта</div></div>
+            <div class="dev-substep-badge">AUTO</div>
+          </div>
+          <div class="dev-substep">
+            <div class="dev-substep-num">3</div>
+            <div class="dev-substep-content"><div class="dev-substep-title">npm install --legacy-peer-deps</div><div class="dev-substep-desc">Установка зависимостей с проверкой целостности SWC-бинарника</div></div>
+            <div class="dev-substep-badge">AUTO</div>
+          </div>
+          <div class="dev-substep">
+            <div class="dev-substep-num">4</div>
+            <div class="dev-substep-content"><div class="dev-substep-title">next build</div><div class="dev-substep-desc">Сборка проекта. При OOM &mdash; автоматический retry с лимитом 2ГБ (NODE_OPTIONS=--max-old-space-size=2048)</div></div>
+            <div class="dev-substep-badge">AUTO</div>
+          </div>
+          <div class="dev-substep">
+            <div class="dev-substep-num">5</div>
+            <div class="dev-substep-content"><div class="dev-substep-title">PM2 start ecosystem.config.js</div><div class="dev-substep-desc">Запуск приложения через PM2 с автоматическим перезапуском</div></div>
+            <div class="dev-substep-badge">AUTO</div>
+          </div>
+          <div class="info-box tip"><div class="icon">&#10003;</div><p>При Standalone режиме .next/static и public/ копируются автоматически</p></div>
+        </div>
+      </div>
+
+
+      <div class="dev-block check" id="devBlock12" data-block="12">
+        <div class="dev-block-accent check"></div>
+        <div class="dev-block-bg check"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#128269;</div>
+            <div><div class="dev-block-num">БЛОК 12 &middot;</div><div class="dev-block-type">CHECK</div><div class="dev-block-title">Проверка репозитория и токена</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(12, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box info"><div class="icon">&#9432;</div><p>Проверка доступа к репозиторию через GitHub API</p></div>
+          <div class="dev-http-cards">
+            <div class="dev-http-card"><div class="dev-http-code c200">200</div><div class="dev-http-desc">Репозиторий существует, доступ есть</div></div>
+            <div class="dev-http-card"><div class="dev-http-code c404">404</div><div class="dev-http-desc">Репозиторий не найден</div></div>
+            <div class="dev-http-card"><div class="dev-http-code c401">401</div><div class="dev-http-desc">Токен неверен или истёк</div></div>
+          </div>
+          <div class="dev-term">
+            <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+            <div class="dev-term-body"><span style="color:#a29bfe">$</span> curl -s -o /dev/null -w "%{http_code}" \<br>  -H "Authorization: token ghp_***" \<br>  https://api.github.com/repos/Mmitekk/be2st.ru<br><span style="color:#00b894">200</span> &mdash; Repository accessible</div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="dev-block auto" id="devBlock13" data-block="13">
+        <div class="dev-block-accent auto"></div>
+        <div class="dev-block-bg auto"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9889;</div>
+            <div><div class="dev-block-num">БЛОК 13 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Первый коммит и пуш</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(13, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматический коммит и push в основную ветку</p></div>
+          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Автор коммита</span><span class="dev-prompt-default">[из профиля GitHub]</span></div>
+          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Email автора</span><span class="dev-prompt-default">[из профиля GitHub]</span></div>
+          <div class="dev-cols">
+            <div class="dev-col">
+              <div class="dev-col-title">&#10003; Обычный push</div>
+              <div class="dev-col-content"><code>git push -u origin main</code><br>Стандартная отправка при отсутствии конфликтов</div>
+            </div>
+            <div class="dev-col">
+              <div class="dev-col-title">&#9888; Force push (при конфликтах)</div>
+              <div class="dev-col-content"><code>git push -f origin main</code><br>Перезаписывает историю на remote</div>
+            </div>
+          </div>
+          <div class="info-box warning"><div class="icon">&#9888;</div><p>Force push перезаписывает историю на remote. Сервер &mdash; источник истины</p></div>
+        </div>
+      </div>
+
+
+      <div class="dev-block auto" id="devBlock14" data-block="14">
+        <div class="dev-block-accent auto"></div>
+        <div class="dev-block-bg auto"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9889;</div>
+            <div><div class="dev-block-num">БЛОК 14 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Финальные проверки</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(14, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматическая проверка всех компонентов деплоя</p></div>
+          <div class="dev-checklist">
+            <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">PM2 процесс &mdash; запущен</div><div class="dev-check-status ok">OK</div></div>
+            <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">.env &mdash; существует</div><div class="dev-check-status ok">OK</div></div>
+            <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">.gitignore &mdash; существует</div><div class="dev-check-status ok">OK</div></div>
+            <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">Git remote &mdash; настроен</div><div class="dev-check-status ok">OK</div></div>
+            <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">HTTP доступ &mdash; OK</div><div class="dev-check-status ok">OK</div></div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="dev-block auto" id="devBlock15" data-block="15">
+        <div class="dev-block-accent auto"></div>
+        <div class="dev-block-bg auto"></div>
+        <div class="dev-block-header">
+          <div class="dev-block-header-left">
+            <div class="dev-block-icon">&#9889;</div>
+            <div><div class="dev-block-num">БЛОК 15 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Автодеплой Webhook</div></div>
+          </div>
+          <button class="dev-block-done-btn" onclick="devToggleDone(15, this)">Отметить &check;</button>
+        </div>
+        <div class="dev-block-body">
+          <div class="info-box info"><div class="icon">&#9432;</div><p>Pipeline: git push &rarr; GitHub &rarr; Webhook &rarr; deploy.sh &rarr; PM2 restart &rarr; сайт обновлён</p></div>
+          <div class="dev-yesno"><span class="dev-yesno-label">Настроить автодеплой?</span><span class="dev-yesno-option dev-yesno-yes">Y (по умолчанию)</span><span class="dev-yesno-option dev-yesno-no">N</span></div>
+          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Порт для webhook-сервера</span><span class="dev-prompt-default">[9000]</span></div>
+          <div class="dev-flow-inline">
+            <div class="dev-flow-node purple">git push</div><div class="dev-flow-arrow">&rarr;</div>
+            <div class="dev-flow-node green">GitHub</div><div class="dev-flow-arrow">&rarr;</div>
+            <div class="dev-flow-node green">Webhook</div><div class="dev-flow-arrow">&rarr;</div>
+            <div class="dev-flow-node green">deploy.sh</div><div class="dev-flow-arrow">&rarr;</div>
+            <div class="dev-flow-node green">PM2 restart</div><div class="dev-flow-arrow">&rarr;</div>
+            <div class="dev-flow-node purple">&#10003; Готово</div>
+          </div>
+          <div class="dev-cols">
+            <div class="dev-col">
+              <div class="dev-col-title">&#128196; Автосозданные файлы</div>
+              <div class="dev-col-content"><code>webhook-server.js</code> &mdash; HTTP-сервер<br><code>deploy.sh</code> &mdash; скрипт обновления<br>PM2 процесс: <code>{name}-webhook</code></div>
+            </div>
+            <div class="dev-col">
+              <div class="dev-col-title">&#128274; GitHub Webhook</div>
+              <div class="dev-col-content">Content type: <code>application/json</code><br>Events: <code>push</code> only<br>Регистрация через GitHub API</div>
+            </div>
+          </div>
+          <div class="info-box warning"><div class="icon">&#9888;</div><p>Если webhook не зарегистрировался &mdash; настройте вручную через GitHub Settings &rarr; Webhooks</p></div>
+        </div>
+      </div>
+
+
+      <!-- Final Summary -->
+      <div class="dev-summary">
+        <div class="dev-summary-title">&#127775; Деплой завершён!</div>
+        <div class="dev-flow-inline">
+          <div class="dev-flow-node purple">git push</div><div class="dev-flow-arrow">&rarr;</div>
+          <div class="dev-flow-node green">GitHub</div><div class="dev-flow-arrow">&rarr;</div>
+          <div class="dev-flow-node green">Webhook</div><div class="dev-flow-arrow">&rarr;</div>
+          <div class="dev-flow-node green">deploy.sh</div><div class="dev-flow-arrow">&rarr;</div>
+          <div class="dev-flow-node green">PM2 restart</div><div class="dev-flow-arrow">&rarr;</div>
+          <div class="dev-flow-node purple">&#10003; Готово</div>
+        </div>
+        <table class="dev-commands-table">
+          <thead><tr><th>#</th><th>Действие</th><th>Команда</th></tr></thead>
           <tbody>
-            <tr><td class="td-num">1</td><td class="td-block">Название проекта и путь</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Проект: be6st.ru</td></tr>
-            <tr><td class="td-num">2</td><td class="td-block">Выбор свободного порта</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Порт: 3006</td></tr>
-            <tr><td class="td-num">3</td><td class="td-block">Режим запуска</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Standalone (node server.js)</td></tr>
-            <tr><td class="td-num">4</td><td class="td-block">Домен и SSL</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Домен: be6st.ru, SSL: Нет</td></tr>
-            <tr><td class="td-num">5</td><td class="td-block">Подготовка PM2 конфигурации</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Конфиг создан: Standalone</td></tr>
-            <tr><td class="td-num">6</td><td class="td-block">Конфигурация веб-сервера</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Nginx: конфиг уже настроен</td></tr>
-            <tr><td class="td-num">7</td><td class="td-block">Git-репозиторий</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Репозиторий: Mmitekk/be2st.ru</td></tr>
-            <tr><td class="td-num">8</td><td class="td-block">Поиск файла базы данных</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Найдена БД: db/custom.db</td></tr>
-            <tr><td class="td-num">9</td><td class="td-block">Создание .gitignore</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Создан: /var/www/be6st.ru/.gitignore</td></tr>
-            <tr><td class="td-num">10</td><td class="td-block">Создание .env</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Создан: /var/www/be6st.ru/.env</td></tr>
-            <tr><td class="td-num">11</td><td class="td-block">Сборка и запуск</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Завершена</td></tr>
-            <tr><td class="td-num">12</td><td class="td-block">Проверка репозитория и токена</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Репозиторий Mmitekk/be2st.ru доступен</td></tr>
-            <tr><td class="td-num">13</td><td class="td-block">Первый коммит и пуш</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Коммит: AutoDeploy: initial commit for be6st.ru [2026-06-05 11:21]</td></tr>
-            <tr><td class="td-num">14</td><td class="td-block">Финальные проверки</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Все проверки пройдены</td></tr>
-            <tr><td class="td-num">15</td><td class="td-block">Настройка автодеплоя</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Webhook порт: 9003</td></tr>
+            <tr><td>1</td><td>Обновить сайт вручную</td><td><code>cd /var/www/my-project && bash deploy.sh</code></td></tr>
+            <tr><td>2</td><td>Перезапустить PM2</td><td><code>pm2 restart my-project</code></td></tr>
+            <tr><td>3</td><td>Перезапустить Nginx</td><td><code>sudo systemctl restart nginx</code></td></tr>
+            <tr><td>4</td><td>Проверить логи</td><td><code>pm2 logs my-project --lines 20</code></td></tr>
+            <tr><td>5</td><td>Автодеплой через git push</td><td><code>git add . && git commit -m "changes" && git push</code></td></tr>
+            <tr><td>6</td><td>Подключение коллеги</td><td><code>git clone ... && npm install && cp .env.example .env && npx prisma migrate dev</code></td></tr>
           </tbody>
         </table>
-
-        <div class="info-box tip">
-          <div class="icon">&#10003;</div>
-          <p>Если напротив каждого блока стоит <strong>OK</strong> &mdash; сайт успешно развёрнут и доступен по вашему домену!</p>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!-- TAB 2 — ДЛЯ РАЗРАБОТЧИКА                                                  -->
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<div class="tab-panel" id="tab-tech">
-
-  <!-- NAV -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="#t1">Копирование</a>
-      <a href="#t2">GitHub</a>
-      <a href="#t3">Запуск</a>
-      <a href="#t-blocks">15 блоков</a>
-      <a href="#t-console">Консоль</a>
-      <a href="#t-result">Результат</a>
-    </div>
-  </nav>
-
-  <div class="container">
-
-    <!-- STEP 1 -->
-    <div class="step" data-color="purple" id="t1">
-      <div class="step-header">
-        <div class="step-number">1</div>
-        <div>
-          <div class="step-title">Копируем сайт на сервер</div>
-          <div class="step-subtitle"><span class="tag tag-manual">MANUAL</span>&ensp;Подготовка файлов</div>
-        </div>
-      </div>
-      <div class="step-body">
-        <p>Скопируйте файлы Next.js-проекта на сервер в директорию сайта. Путь должен соответствовать домену: <code>/var/www/&lt;domain&gt;</code>. Все файлы проекта (<code>package.json</code>, <code>next.config.ts</code>, <code>prisma/</code> и т.д.) должны находиться непосредственно в корне директории, без вложенных подпапок.</p>
-
-        <div class="code-label">SCP / Rsync</div>
-        <div class="code-block">
-          <span class="comment"># SCP</span><br>
-          scp -r ./site-files/* root@server:/var/www/be6st.ru/<br><br>
-          <span class="comment"># Rsync (рекомендуется для больших проектов)</span><br>
-          rsync -avz --delete ./site-files/ root@server:/var/www/be6st.ru/
-        </div>
-
-        <div class="info-box tip">
-          <div class="icon">&#10003;</div>
-          <p><strong>Структура:</strong> <code>package.json</code>, <code>next.config.ts</code> и остальные файлы &mdash; прямо в корне <code>/var/www/be6st.ru/</code>. Скрипт ожидает именно такую структуру и автоматически определит конфигурацию standalone из <code>next.config.*</code>.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 2 -->
-    <div class="step" data-color="green" id="t2">
-      <div class="step-header">
-        <div class="step-number">2</div>
-        <div>
-          <div class="step-title">Создание репозитория GitHub</div>
-          <div class="step-subtitle"><span class="tag tag-manual">MANUAL</span>&ensp;Webhook-автодеплой&ensp;<span class="tag tag-auto">ВИДЕО</span></div>
-        </div>
-      </div>
-      <div class="step-body">
-        <p>Git-репозиторий на GitHub необходим для автоматического деплоя: webhook-сервер слушает push-события и запускает <code>git pull && npm install && npm run build && pm2 restart</code>. Создайте приватный репозиторий и Fine-grained PAT.</p>
-
-        <div class="video-wrapper">
-          <video controls preload="metadata">
-            <source src="2026-06-05_12-16-58.mp4" type="video/mp4">
-            Ваш браузер не поддерживает воспроизведение видео.
-          </video>
-        </div>
-
-        <ol class="substeps">
-          <li data-num="1">
-            Перейдите на <strong>github.com</strong> &rarr; <strong>New repository</strong>
-          </li>
-          <li data-num="2">
-            Имя репозитория &mdash; домен сайта (например, <code>be6st.ru</code>)
-          </li>
-          <li data-num="3">
-            Выберите <strong>Private</strong>
-          </li>
-          <li data-num="4">
-            Создайте <strong>Fine-grained personal access token</strong>: Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; Fine-grained tokens. Права: <strong>Contents</strong> (R/W), <strong>Webhooks</strong> (R/W), <strong>Administration</strong> (R/W)
-          </li>
-        </ol>
-
-        <div class="info-box warning">
-          <div class="icon">&#9888;</div>
-          <p><strong>Токен показывается один раз.</strong> Скрипт использует его для <code>git push</code> и для проверки доступа к репозиторию через GitHub API (блок 12). Без прав <code>repo</code> на токене push и webhook не сработают.</p>
-        </div>
-
-        <div class="info-box info">
-          <div class="icon">&#9432;</div>
-          <p><strong>Владелец и название:</strong> из URL <code>https://github.com/Mmitekk/NarkoZav7</code> &rarr; владелец <code>Mmitekk</code>, репозиторий <code>NarkoZav7</code>. Эти значения вводятся в блоке 7 скрипта.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 3 -->
-    <div class="step" data-color="orange" id="t3">
-      <div class="step-header">
-        <div class="step-number">3</div>
-        <div>
-          <div class="step-title">Запуск autodeploy.py</div>
-          <div class="step-subtitle"><span class="tag tag-manual">MANUAL INPUT</span>&ensp;4 интерактивных блока из 15</div>
-        </div>
-      </div>
-      <div class="step-body">
-        <p>SSH на сервер, запуск скрипта. Из 15 блоков только 4 требуют ручного ввода (блоки 1, 3, 4, 7), остальные &mdash; автоматические. Скрипт: определяет свободный порт, генерирует <code>ecosystem.config.js</code> для PM2, настраивает Nginx/Apache прокси, создаёт <code>.env</code> и <code>.gitignore</code>, выполняет <code>npm install && next build && pm2 start</code>, инициализирует Git, пушит в GitHub, запускает webhook-сервер.</p>
-
-        <div class="code-copy-wrap">
-          <div class="code-block"><code>python3 autodeploy.py</code></div>
-          <button class="code-copy-btn" onclick="copyCmd(this)" title="Скопировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать</button>
-        </div>
-
-        <ol class="substeps">
-          <li data-num="1">
-            <strong>Название проекта</strong> &mdash; домен сайта (<code>be6st.ru</code>)
-          </li>
-          <li data-num="2">
-            <strong>Путь к проекту</strong> &mdash; <code>/var/www/be6st.ru</code>
-          </li>
-          <li data-num="3">
-            <strong>Режим запуска</strong> &mdash; <code>[1]</code> Standalone (<code>node .next/standalone/server.js</code>, требует <code>output: "standalone"</code> в next.config) или <code>[3]</code> автоопределение
-          </li>
-          <li data-num="4">
-            <strong>Домен и SSL</strong> &mdash; домен, SSL через Let's Encrypt (<code>y</code>/<code>n</code>)
-          </li>
-          <li data-num="5">
-            <strong>Логин владельца GitHub</strong> &mdash; из URL репозитория (<code>Mmitekk</code>)
-          </li>
-          <li data-num="6">
-            <strong>Название репозитория</strong> &mdash; из URL (<code>be2st.ru</code>)
-          </li>
-          <li data-num="7">
-            <strong>Приватный</strong> &mdash; <code>[y]</code>
-          </li>
-          <li data-num="8">
-            <strong>Fine-grained PAT</strong> &mdash; токен с правами Contents + Webhooks
-          </li>
-          <li data-num="9">
-            <strong>Ожидание</strong> &mdash; автоматические блоки: npm install, next build, pm2 start, git init/commit/push, webhook setup
-          </li>
-        </ol>
-
-        <div class="flow-diagram">
-          <div class="flow-node manual">Ввод данных<br><small>(блоки 1,3,4,7)</small></div>
-          <div class="flow-arrow">&rarr;</div>
-          <div class="flow-node auto">PM2 + Nginx<br><small>(блоки 2,5,6)</small></div>
-          <div class="flow-arrow">&rarr;</div>
-          <div class="flow-node auto">.env + .gitignore<br><small>(блоки 8,9,10)</small></div>
-          <div class="flow-arrow">&rarr;</div>
-          <div class="flow-node auto">Build + Start<br><small>(блок 11)</small></div>
-          <div class="flow-arrow">&rarr;</div>
-          <div class="flow-node auto">Git push<br><small>(блоки 12,13)</small></div>
-          <div class="flow-arrow">&rarr;</div>
-          <div class="flow-node auto">Webhook<br><small>(блоки 14,15)</small></div>
-        </div>
-
-        <div class="info-box tip">
-          <div class="icon">&#10003;</div>
-          <p><strong>Standalone vs Standard:</strong> Standalone &mdash; <code>node .next/standalone/server.js</code>, быстрее и меньше памяти, не требует <code>node_modules</code> для запуска. Требует <code>output: "standalone"</code> в <code>next.config.ts/js</code>. Standard &mdash; <code>npx next start</code>, требует полный <code>node_modules</code>, проще для отладки. Скрипт автоматически переключается на Standard, если <code>standalone/server.js</code> не найден после сборки.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- 15 BLOCKS TABLE -->
-    <div class="step" data-color="blue" id="t-blocks">
-      <div class="step-header">
-        <div class="step-number">&#9776;</div>
-        <div>
-          <div class="step-title">Все 15 блоков деплоя</div>
-          <div class="step-subtitle">Полная схема выполнения autodeploy.py</div>
-        </div>
-      </div>
-      <div class="step-body">
-        <p>Скрипт последовательно выполняет 15 блоков. <strong>MANUAL</strong> &mdash; требует ввода, <strong>AUTO</strong> &mdash; выполняется без участия, <strong>CHECK</strong> &mdash; автоматическая проверка с повтором при ошибке.</p>
-
-        <div class="blocks-grid">
-          <div class="row header">
-            <div class="cell cell-num">#</div>
-            <div class="cell cell-title">Блок</div>
-            <div class="cell cell-type">Тип</div>
-            <div class="cell cell-desc">Описание</div>
+        <div class="dev-cols">
+          <div class="dev-col">
+            <div class="dev-col-title">&#10003; В Git (на GitHub)</div>
+            <div class="dev-col-content"><code>src/</code>, <code>prisma/</code>, <code>public/</code><br><code>package.json</code>, <code>next.config.ts</code><br><code>.env.example</code></div>
           </div>
-          <div class="row"><div class="cell cell-num">1</div><div class="cell cell-title">Название проекта и путь</div><div class="cell cell-type manual">MANUAL</div><div class="cell cell-desc">Ввод данных</div></div>
-          <div class="row"><div class="cell cell-num">2</div><div class="cell cell-title">Выбор свободного порта</div><div class="cell cell-type auto">AUTO</div><div class="cell cell-desc">Диапазон 3000-9999</div></div>
-          <div class="row"><div class="cell cell-num">3</div><div class="cell cell-title">Режим запуска</div><div class="cell cell-type manual">MANUAL</div><div class="cell cell-desc">Standalone / Standard / Auto</div></div>
-          <div class="row"><div class="cell cell-num">4</div><div class="cell cell-title">Домен и SSL</div><div class="cell cell-type manual">MANUAL</div><div class="cell cell-desc">Let's Encrypt опционально</div></div>
-          <div class="row"><div class="cell cell-num">5</div><div class="cell cell-title">Подготовка PM2</div><div class="cell cell-type auto">AUTO</div><div class="cell cell-desc">ecosystem.config.js</div></div>
-          <div class="row"><div class="cell cell-num">6</div><div class="cell cell-title">Веб-сервер</div><div class="cell cell-type auto">AUTO</div><div class="cell cell-desc">Nginx/Apache proxy_pass</div></div>
-          <div class="row"><div class="cell cell-num">7</div><div class="cell cell-title">Git-репозиторий</div><div class="cell cell-type manual">MANUAL</div><div class="cell cell-desc">Ввод owner/repo + token</div></div>
-          <div class="row"><div class="cell cell-num">8</div><div class="cell cell-title">Поиск базы данных</div><div class="cell cell-type auto">AUTO</div><div class="cell cell-desc">Поиск *.db (до 3 уровней)</div></div>
-          <div class="row"><div class="cell cell-num">9</div><div class="cell cell-title">Создание .gitignore</div><div class="cell cell-type auto">AUTO</div><div class="cell cell-desc">node_modules, .next, *.db, .env и т.д.</div></div>
-          <div class="row"><div class="cell cell-num">10</div><div class="cell cell-title">Создание .env</div><div class="cell cell-type auto">AUTO</div><div class="cell cell-desc">PORT, DATABASE_URL, SECRET_KEY, SSL</div></div>
-          <div class="row"><div class="cell cell-num">11</div><div class="cell cell-title">Сборка и запуск</div><div class="cell cell-type auto">AUTO</div><div class="cell cell-desc">npm install + next build + pm2 start</div></div>
-          <div class="row"><div class="cell cell-num">12</div><div class="cell cell-title">Проверка репо и токена</div><div class="cell cell-type check">CHECK</div><div class="cell cell-desc">GitHub API + retry при 401/404</div></div>
-          <div class="row"><div class="cell cell-num">13</div><div class="cell cell-title">Первый коммит и пуш</div><div class="cell cell-type auto">AUTO</div><div class="cell cell-desc">git init + commit + push</div></div>
-          <div class="row"><div class="cell cell-num">14</div><div class="cell cell-title">Финальные проверки</div><div class="cell cell-type auto">AUTO</div><div class="cell cell-desc">PM2 status, .env, HTTP 200 check</div></div>
-          <div class="row"><div class="cell cell-num">15</div><div class="cell cell-title">Настройка автодеплоя</div><div class="cell cell-type auto">AUTO</div><div class="cell cell-desc">webhook-server.js на отдельном порту</div></div>
+          <div class="dev-col">
+            <div class="dev-col-title">&#128274; Только на VDS (не в Git)</div>
+            <div class="dev-col-content"><code>.env</code> &mdash; секреты и ключи<br><code>*.db</code> &mdash; база данных<br><code>ecosystem.config.js</code>, <code>webhook-server.js</code><br><code>deploy.sh</code>, логи</div>
+          </div>
         </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="dev-nav-btns">
+        <button class="dev-nav-btn" id="devPrevBtn" onclick="devNavigate(-1)">&#8592; Назад</button>
+        <button class="dev-nav-btn" id="devNextBtn" onclick="devNavigate(1)">Далее &#8594;</button>
       </div>
     </div>
-
-    <!-- CONSOLE OUTPUT -->
-    <div class="step" data-color="green" id="t-console">
-      <div class="step-header">
-        <div class="step-number">&gt;_</div>
-        <div>
-          <div class="step-title">Пример вывода в консоли</div>
-          <div class="step-subtitle">Реальный лог деплоя be6st.ru</div>
-        </div>
-      </div>
-      <div class="step-body">
-        <p>Ниже &mdash; полный вывод скрипта при деплое сайта <code>be6st.ru</code>. Зелёные <span style="color:var(--green);font-weight:600;">OK</span> &mdash; успешное выполнение блока. При ошибке скрипт выводит детали и предлагает повтор.</p>
-
-        <div class="console-output">
-<span class="c-accent">root@msk-1-vm-w3gg</span>:<span class="c-muted">/var/www</span>$ python3 autodeploy.py
-
-<span class="c-white">&#9580;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9580;</span>
-<span class="c-white">&#9553;</span> <span class="c-accent">AutoDeploy</span> &mdash; Автоматический деплой сайтов         <span class="c-white">&#9553;</span>
-<span class="c-white">&#9553;</span> 15 блоков. Большинство выполняются автоматически. <span class="c-white">&#9553;</span>
-<span class="c-white">&#9574;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9577;</span>
-
-<span class="c-white">План выполнения:</span>
-
-   1. <span class="c-orange">MANUAL</span>  Название проекта и путь              Ввод данных
-   2. <span class="c-green">AUTO</span>    Выбор свободного порта               Автоматически
-   3. <span class="c-orange">MANUAL</span>  Режим запуска (Standalone/Std)       Выбор режима
-   4. <span class="c-orange">MANUAL</span>  Домен и SSL                          Ввод данных
-   5. <span class="c-green">AUTO</span>    Подготовка PM2 конфигурации          Автоматически
-   6. <span class="c-green">AUTO</span>    Конфигурация веб-сервера             Автоматически
-   7. <span class="c-orange">MANUAL</span>  Git-репозиторий                      Ввод данных
-   8. <span class="c-green">AUTO</span>    Поиск файла базы данных              Автоматически
-   9. <span class="c-green">AUTO</span>    Создание .gitignore                  Автоматически
-  10. <span class="c-green">AUTO</span>    Создание .env                        Автоматически
-  11. <span class="c-green">AUTO</span>    Сборка и запуск                      npm install + next build + pm2 start
-  12. <span class="c-orange">CHECK</span>   Проверка репозитория и токена        Авто + запрос при ошибке
-  13. <span class="c-green">AUTO</span>    Первый коммит и пуш                  Автоматически
-  14. <span class="c-green">AUTO</span>    Финальные проверки                   Автоматически
-  15. <span class="c-green">AUTO</span>    Настройка автодеплоя                 Автоматически
-
-<span class="c-dim">Нажмите Enter для начала...</span>
-
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 1/15: Название проекта и путь</span>  [<span class="c-orange">MANUAL</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-  Название проекта: <span class="c-orange">be6st.ru</span>
-  Путь к сайту (/var/www/be6st.ru): <span class="c-orange">/var/www/be6st.ru</span>
-    <span class="c-ok">&#10003; OK</span>  Проект: be6st.ru
-         Путь: /var/www/be6st.ru
-         Домен: be6st.ru
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 2/15: Выбор свободного порта</span>  [<span class="c-green">AUTO</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-    <span class="c-ok">&#10003; OK</span>  Порт: 3006
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 3/15: Режим запуска</span>  [<span class="c-orange">MANUAL</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-  Ваш выбор [1/2/3] (3): <span class="c-orange">1</span>
-    <span class="c-ok">&#10003; OK</span>  Standalone (node server.js)
-         Обнаружен output: standalone в конфиге
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 4/15: Домен и SSL</span>  [<span class="c-orange">MANUAL</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-  Домен (Enter чтобы пропустить) (): <span class="c-orange">be6st.ru</span>
-  Настроить SSL (Let's Encrypt)? [y/n] (n): <span class="c-orange">n</span>
-    <span class="c-ok">&#10003; OK</span>  Домен: be6st.ru, SSL: Нет
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 5/15: Подготовка PM2 конфигурации</span>  [<span class="c-green">AUTO</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-    <span class="c-ok">&#10003; OK</span>  Конфиг создан: Standalone
-         Режим: Standalone
-         Порт: 3006
-         Файл: /var/www/be6st.ru/ecosystem.config.js
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 6/15: Конфигурация веб-сервера</span>  [<span class="c-green">AUTO</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-    <span class="c-ok">&#10003; OK</span>  Nginx: конфиг уже настроен (/etc/nginx/sites-available/be6st.ru)
-         Прокси на порт 3006
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 7/15: Git-репозиторий</span>  [<span class="c-orange">MANUAL</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-  Владелец репозитория (логин GitHub): <span class="c-orange">Mmitekk</span>
-  Название репозитория: <span class="c-orange">be2st.ru</span>
-  Репозиторий приватный? [y/n] (y): <span class="c-orange">y</span>
-  GitHub Token: <span class="c-dim">****</span>
-    <span class="c-ok">&#10003; OK</span>  Репозиторий: Mmitekk/be2st.ru
-         Токен: указан
-         Приватный: да
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 8/15: Поиск файла базы данных</span>  [<span class="c-green">AUTO</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-    <span class="c-ok">&#10003; OK</span>  Найдена БД: db/custom.db
-         Полный путь: /var/www/be6st.ru/db/custom.db
-         Всего *.db: 1
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 9/15: Создание .gitignore</span>  [<span class="c-green">AUTO</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-    <span class="c-ok">&#10003; OK</span>  Создан: /var/www/be6st.ru/.gitignore
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 10/15: Создание .env</span>  [<span class="c-green">AUTO</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-    <span class="c-ok">&#10003; OK</span>  Создан: /var/www/be6st.ru/.env
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 11/15: Сборка и запуск</span>  [<span class="c-green">AUTO</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-  Очистка и установка зависимостей...
-  Сборка проекта (next build)...
-    <span class="c-ok">&#10003; OK</span>  Завершена
-         Создана: logs/
-         Создана: public/
-         Создана: tmp/
-         Git уже инициализирован
-         npm install --legacy-peer-deps &#8212; OK
-         next build &#8212; OK
-         standalone server.js &#8212; создан
-         PM2 запущен (Standalone)
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 12/15: Проверка репозитория и токена</span>  [<span class="c-orange">CHECK</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-    <span class="c-ok">&#10003; OK</span>  Репозиторий Mmitekk/be2st.ru доступен
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 13/15: Первый коммит и пуш</span>  [<span class="c-green">AUTO</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-    <span class="c-ok">&#10003; OK</span>  Коммит: 'AutoDeploy: initial commit for be6st.ru [2026-06-05 11:21]'
-         Push выполнен
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 14/15: Финальные проверки</span>  [<span class="c-green">AUTO</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-    <span class="c-ok">&#10003; OK</span>  Все проверки пройдены
-         PM2 процесс &#8212; запущен
-         .env &#8212; существует
-         .gitignore &#8212; существует
-         Git remote &#8212; настроен
-         Порт: 3006
-         HTTP через веб-сервер &#8212; OK (статус 200)
-         Прямой HTTP на порт 3006 &#8212; OK
-
-<span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span> <span class="c-white">Блок 15/15: Настройка автодеплоя</span>  [<span class="c-green">AUTO</span>] <span class="c-muted">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-    <span class="c-ok">&#10003; OK</span>  Webhook порт: 9003
-         Файл: /var/www/be6st.ru/webhook-server.js
-
-<span class="c-white">&#9580;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9580;</span>
-<span class="c-white">&#9553;</span> <span class="c-green" style="font-weight:700;">Все блоки выполнены успешно!</span>                        <span class="c-white">&#9553;</span>
-<span class="c-white">&#9574;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9577;</span>
-
-<span class="c-accent">Ключевые параметры:</span>
-  Проект: be6st.ru
-  Домен: be6st.ru
-  Путь: /var/www/be6st.ru
-  Порт приложения: 3006
-  Файл БД: /var/www/be6st.ru/db/custom.db
-  Репозиторий: Mmitekk/be2st.ru
-  Webhook порт: 9003
-
-  Лог: /var/www/deploy-logs/deploy_be6st.ru_20260605_112152.log
-        </div>
-      </div>
-    </div>
-
-    <!-- RESULT -->
-    <div class="step" data-color="purple" id="t-result">
-      <div class="step-header">
-        <div class="step-number">&#10003;</div>
-        <div>
-          <div class="step-title">Результат деплоя</div>
-          <div class="step-subtitle">Что создаёт и настраивает скрипт</div>
-        </div>
-      </div>
-      <div class="step-body">
-        <p>После успешного выполнения всех 15 блоков скрипт автоматически создаёт и настраивает:</p>
-
-        <ol class="substeps">
-          <li data-num="1">
-            <strong>ecosystem.config.js</strong> &mdash; PM2-конфиг с <code>autorestart: true</code>, <code>max_memory_restart: 500M</code>
-          </li>
-          <li data-num="2">
-            <strong>Nginx/Apache vhost</strong> &mdash; <code>proxy_pass</code> на <code>127.0.0.1:{port}</code>, <code>alias</code> для <code>/_next/static/</code>
-          </li>
-          <li data-num="3">
-            <strong>.env</strong> &mdash; PORT, DATABASE_URL (SQLite), NEXT_PUBLIC_SITE_URL, SECRET_KEY, ENABLE_SSL
-          </li>
-          <li data-num="4">
-            <strong>.gitignore</strong> &mdash; node_modules, .next, *.db, .env, logs, ключи
-          </li>
-          <li data-num="5">
-            <strong>Build</strong> &mdash; <code>npm install --legacy-peer-deps && npm run build</code>, проверка SWC-бинарника, fallback при OOM (2ГБ лимит)
-          </li>
-          <li data-num="6">
-            <strong>Git</strong> &mdash; init, remote с токеном в URL, initial commit + push
-          </li>
-          <li data-num="7">
-            <strong>webhook-server.js</strong> &mdash; HTTP-сервер на отдельном порту, слушает GitHub push-события и запускает <code>git pull && npm install && npm run build && pm2 restart</code>
-          </li>
-        </ol>
-
-        <div class="info-box tip">
-          <div class="icon">&#10003;</div>
-          <p><strong>Автодеплой:</strong> при каждом push в репозиторий GitHub webhook автоматически подтянет изменения, пересоберёт проект и перезапустит PM2. Для нейросети обновление сайта &mdash; просто push в GitHub.</p>
-        </div>
-      </div>
-    </div>
-
   </div>
+
+  <!-- Reset button -->
+  <button class="dev-reset-btn" onclick="devResetProgress()">&#128260; Сбросить прогресс</button>
+
+  <!-- Mobile sidebar toggle -->
+  <button class="dev-sidebar-toggle" onclick="devToggleSidebar()">&#9776; Навигация</button>
 </div>
 
-<!-- ===== FOOTER ===== -->
-<div class="footer">
-  AutoDeploy &mdash; Автоматический деплой нейросайтов на VDS
-</div>
+<!-- Footer -->
+<div class="footer">AutoDeploy &mdash; Автоматический деплой нейросайтов на VDS</div>
 
-<!-- ===== SCROLL TOP ===== -->
+<!-- Scroll top -->
 <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#9650;</button>
 
 <script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
+
+// Scroll to top
+var scrollBtn = document.getElementById('scrollTopBtn');
+window.addEventListener('scroll', function() {
+  scrollBtn.classList.toggle('visible', window.scrollY > 400);
+});
+
+// Copy command (Tab 1)
 function copyCmd(btn) {
   var code = btn.parentElement.querySelector('code');
   navigator.clipboard.writeText(code.textContent).then(function() {
@@ -1224,22 +1091,153 @@ function copyCmd(btn) {
     }, 2000);
   });
 }
-  // Tabs
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+
+// ===== DEVELOPER TAB LOGIC =====
+var DEV_KEY = 'autodeploy_progress';
+var currentBlock = 1;
+var totalBlocks = 15;
+
+function getDoneBlocks() {
+  try {
+    var data = localStorage.getItem(DEV_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch(e) { return {}; }
+}
+
+function saveDoneBlocks(blocks) {
+  try { localStorage.setItem(DEV_KEY, JSON.stringify(blocks)); } catch(e) {}
+}
+
+function devUpdateProgress() {
+  var done = getDoneBlocks();
+  var count = Object.keys(done).filter(function(k) { return done[k]; }).length;
+  document.getElementById('devProgressText').textContent = count + ' / ' + totalBlocks;
+  document.getElementById('devProgressFill').style.width = (count / totalBlocks * 100) + '%';
+  
+  // Update sidebar items
+  document.querySelectorAll('.dev-sidebar-item').forEach(function(item) {
+    var num = item.dataset.block;
+    item.classList.remove('done', 'active', 'pending');
+    var icon = item.querySelector('.dev-sidebar-icon');
+    if (done[num]) {
+      item.classList.add('done');
+      icon.innerHTML = '&#10003;';
+    } else if (parseInt(num) === currentBlock) {
+      item.classList.add('active');
+      icon.innerHTML = '&#9679;';
+    } else {
+      item.classList.add('pending');
+      icon.innerHTML = '&#9675;';
+    }
   });
 
-  // Scroll-to-top
-  const scrollBtn = document.getElementById('scrollTopBtn');
-  window.addEventListener('scroll', () => {
-    scrollBtn.classList.toggle('visible', window.scrollY > 400);
+  // Update done buttons
+  document.querySelectorAll('.dev-block-done-btn').forEach(function(btn) {
+    var block = btn.closest('.dev-block');
+    var num = block.dataset.block;
+    if (done[num]) {
+      btn.classList.add('is-done');
+      btn.textContent = '✓ Выполнено';
+    } else {
+      btn.classList.remove('is-done');
+      btn.textContent = 'Отметить ✓';
+    }
   });
+
+  // Update nav buttons
+  document.getElementById('devPrevBtn').disabled = currentBlock <= 1;
+  document.getElementById('devNextBtn').disabled = currentBlock >= totalBlocks;
+}
+
+function devToggleDone(num, btn) {
+  var done = getDoneBlocks();
+  if (done[num]) {
+    delete done[num];
+  } else {
+    done[num] = true;
+    // Auto-advance to next undone block
+    for (var i = num + 1; i <= totalBlocks; i++) {
+      if (!done[i]) { currentBlock = i; break; }
+    }
+  }
+  saveDoneBlocks(done);
+  devUpdateProgress();
+  devScrollToBlock(currentBlock);
+}
+
+function devScrollToBlock(num) {
+  currentBlock = num;
+  var el = document.getElementById('devBlock' + num);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  devUpdateProgress();
+}
+
+function devNavigate(delta) {
+  var newBlock = currentBlock + delta;
+  if (newBlock >= 1 && newBlock <= totalBlocks) {
+    devScrollToBlock(newBlock);
+  }
+}
+
+function devResetProgress() {
+  if (confirm('Сбросить прогресс всех блоков?')) {
+    localStorage.removeItem(DEV_KEY);
+    currentBlock = 1;
+    devUpdateProgress();
+  }
+}
+
+function devCopyRun(btn) {
+  navigator.clipboard.writeText('python3 autodeploy.py').then(function() {
+    btn.classList.add('copied');
+    btn.innerHTML = '&#10003; Скопировано';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.innerHTML = '&#128203; Копировать';
+    }, 2000);
+  });
+}
+
+function devCopyCode(btn) {
+  var body = btn.closest('.dev-code').querySelector('.dev-code-body');
+  navigator.clipboard.writeText(body.textContent).then(function() {
+    btn.classList.add('copied');
+    btn.innerHTML = '&#10003; Скопировано';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.innerHTML = '&#128203; Копировать';
+    }, 2000);
+  });
+}
+
+function devToggleSidebar() {
+  document.getElementById('devSidebar').classList.toggle('open');
+}
+
+// Intersection Observer for auto-updating active block
+function devSetupObserver() {
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var num = parseInt(entry.target.dataset.block);
+        if (num && num !== currentBlock) {
+          currentBlock = num;
+          devUpdateProgress();
+        }
+      }
+    });
+  }, { threshold: 0.3, rootMargin: '-80px 0px -50% 0px' });
+
+  document.querySelectorAll('.dev-block').forEach(function(block) {
+    observer.observe(block);
+  });
+}
+
+// Init
+devUpdateProgress();
+devSetupObserver();
 </script>
 
 </body>
