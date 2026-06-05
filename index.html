@@ -183,8 +183,11 @@
   .dev-header-subtitle { color: var(--text-muted); font-size: 1rem; margin-bottom: 16px; line-height: 1.6; }
   .dev-tech-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
   .dev-tech-badge { padding: 4px 12px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted); }
-  .dev-run-cmd { display: flex; align-items: center; margin-bottom: 12px; }
-  .dev-run-cmd-input { flex: 1; background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm) 0 0 var(--radius-sm); padding: 12px 16px; font-family: var(--font-mono); font-size: 0.92rem; color: var(--green); }
+  .dev-run-cmd { display: flex; flex-direction: column; gap: 0; margin-bottom: 12px; }
+  .dev-run-cmd-row { display: flex; align-items: center; }
+  .dev-run-cmd-input { flex: 1; background: #0d1117; border: 1px solid var(--border); padding: 12px 16px; font-family: var(--font-mono); font-size: 0.92rem; color: var(--green); }
+  .dev-run-cmd-input.first { border-radius: var(--radius-sm) 0 0 0; border-bottom: none; }
+  .dev-run-cmd-input.last { border-radius: 0 0 0 var(--radius-sm); }
   .dev-run-cmd-btn { background: #0d1117; border: 1px solid var(--border); border-left: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 12px 16px; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; font-family: var(--font-mono); transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
   .dev-run-cmd-btn:hover { color: var(--accent-light); background: var(--surface-2); }
   .dev-run-cmd-btn.copied { color: var(--green); }
@@ -307,6 +310,15 @@
   .dev-commands-table td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
   .dev-commands-table code { font-family: var(--font-mono); font-size: 0.82rem; color: var(--orange); background: #0d1117; padding: 1px 5px; border-radius: 3px; }
 
+  /* Multi-line command block with copy */
+  .cmd-block { background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); margin: 12px 0; display: flex; flex-direction: column; overflow: hidden; }
+  .cmd-block-row { display: flex; align-items: center; }
+  .cmd-block-row + .cmd-block-row { border-top: 1px solid var(--border); }
+  .cmd-block-code { flex: 1; padding: 12px 16px; font-family: var(--font-mono); font-size: 0.92rem; color: var(--green); display: flex; align-items: center; }
+  .cmd-block-copy { background: #0d1117; border: none; border-left: 1px solid var(--border); padding: 12px 16px; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; font-family: var(--font-mono); transition: all 0.2s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .cmd-block-copy:hover { color: var(--accent-light); background: var(--surface-2); }
+  .cmd-block-copy.copied { color: var(--green); }
+
   @media (max-width: 640px) {
     .hero { padding: 40px 16px 28px; }
     .step { padding: 20px 18px; }
@@ -354,7 +366,7 @@
   </div>
 </div>
 
-<!-- TAB 1 — ДЛЯ ПОЛЬЗОВАТЕЛЯ (UNCHANGED) -->
+<!-- TAB 1 — ДЛЯ ПОЛЬЗОВАТЕЛЯ -->
 <div class="tab-panel active" id="tab-simple">
   <nav class="nav"><div class="nav-inner"><a href="#s1">1. Копирование</a><a href="#s2">2. Репозиторий</a><a href="#s3">3. Запуск</a><a href="#s-summary">Результат</a></div></nav>
   <div class="container">
@@ -386,8 +398,17 @@
     <div class="step" data-color="orange" id="s3">
       <div class="step-header"><div class="step-number">3</div><div><div class="step-title">Запускаем скрипт развертывания</div><div class="step-subtitle">Скрипт сам сделает почти всё за вас</div></div></div>
       <div class="step-body">
-        <p>Подключитесь к серверу и запустите скрипт. Он задаст несколько вопросов, а всё остальное сделает автоматически: установит нужные программы, соберёт сайт, запустит его и настроит обновления.</p>
-        <div class="code-copy-wrap"><div class="code-block"><code>python3 autodeploy.py</code></div><button class="code-copy-btn" onclick="copyCmd(this)" title="Скопировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать</button></div>
+        <p>Подключитесь к серверу, перейдите в каталог скрипта и запустите его. Он задаст несколько вопросов, а всё остальное сделает автоматически: установит нужные программы, соберёт сайт, запустит его и настроит обновления.</p>
+        <div class="cmd-block">
+          <div class="cmd-block-row">
+            <div class="cmd-block-code">cd /var/www</div>
+            <button class="cmd-block-copy" onclick="copySingleCmd(this, 'cd /var/www')" title="Скопировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать</button>
+          </div>
+          <div class="cmd-block-row">
+            <div class="cmd-block-code">python3 autodeploy.py</div>
+            <button class="cmd-block-copy" onclick="copySingleCmd(this, 'python3 autodeploy.py')" title="Скопировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать</button>
+          </div>
+        </div>
         <ol class="substeps">
           <li data-num="1"><strong>Название проекта</strong> &mdash; введите домен вашего сайта, например <code>be6st.ru</code></li>
           <li data-num="2"><strong>Путь к сайту</strong> &mdash; полный путь на сервере, например <code>/var/www/be6st.ru</code></li>
@@ -557,8 +578,13 @@
           <span class="dev-tech-badge">GitHub</span>
         </div>
         <div class="dev-run-cmd">
-          <div class="dev-run-cmd-input">python3 autodeploy.py</div>
-          <button class="dev-run-cmd-btn" onclick="devCopyRun(this)">&#128203; Копировать</button>
+          <div class="dev-run-cmd-row">
+            <div class="dev-run-cmd-input first">cd /var/www</div>
+          </div>
+          <div class="dev-run-cmd-row">
+            <div class="dev-run-cmd-input last">python3 autodeploy.py</div>
+            <button class="dev-run-cmd-btn" onclick="devCopyRun(this)">&#128203; Копировать</button>
+          </div>
         </div>
         <div class="dev-header-tip">&#128161; Отвечайте на вопросы скрипта или нажимайте Enter для значения по умолчанию. Ниже &mdash; описание каждого шага с пояснениями.</div>
       </div>
@@ -1079,7 +1105,19 @@ window.addEventListener('scroll', function() {
   scrollBtn.classList.toggle('visible', window.scrollY > 400);
 });
 
-// Copy command (Tab 1)
+// Copy command (Tab 1 - multi-line block)
+function copySingleCmd(btn, text) {
+  navigator.clipboard.writeText(text).then(function() {
+    btn.classList.add('copied');
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Скопировано';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать';
+    }, 2000);
+  });
+}
+
+// Copy command (Tab 1 - legacy single line)
 function copyCmd(btn) {
   var code = btn.parentElement.querySelector('code');
   navigator.clipboard.writeText(code.textContent).then(function() {
@@ -1190,7 +1228,7 @@ function devResetProgress() {
 }
 
 function devCopyRun(btn) {
-  navigator.clipboard.writeText('python3 autodeploy.py').then(function() {
+  navigator.clipboard.writeText('cd /var/www && python3 autodeploy.py').then(function() {
     btn.classList.add('copied');
     btn.innerHTML = '&#10003; Скопировано';
     setTimeout(function() {
