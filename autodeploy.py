@@ -949,6 +949,18 @@ class DeployExecutor:
         repo_name = self.ctx.get("repo_name", "")
         github_token = self.ctx.get("github_token", "")
 
+        # Убеждаемся, что .env НЕ отслеживается git
+        # (git rm --cached удаляет из индекса, но оставляет файл на диске)
+        rc_tracked, out_tracked, _ = run_cmd(
+            f"cd {site_path} && git ls-files .env .env.local .env.production"
+        )
+        if out_tracked.strip():
+            for env_file in out_tracked.strip().split('\n'):
+                env_file = env_file.strip()
+                if env_file:
+                    run_cmd(f"cd {site_path} && git rm --cached {env_file} 2>/dev/null")
+                    console.print(f"  [yellow]Удалён из git: {env_file} (файл остаётся на диске)[/yellow]")
+
         rc, _, err = run_cmd(f"cd {site_path} && git add -A")
         if rc != 0:
             return self._add_result(13, "first_commit", "Первый коммит и пуш", False,
@@ -979,12 +991,17 @@ class DeployExecutor:
                 run_cmd(f"cd {site_path} && git branch -m {current_branch} main")
 
             # Подтягиваем изменения с remote (если remote не пустой)
-            # -X ours: при конфликтах — предпочтение локальным файлам
+            # ВАЖНО: при rebase стратегия -X theirs означает
+            # «предпочесть НАШИ локальные изменения» (т.к. при rebase
+            # ours = upstream/remote, theirs = локальные коммиты)
             run_cmd(
                 f"cd {site_path} && git pull origin main "
-                f"--rebase --allow-unrelated-histories -X ours 2>&1"
+                f"--rebase --allow-unrelated-histories -X theirs 2>&1"
             )
             # Ошибки pull не критичны (remote может быть пустым или без ветки main)
+
+            # Восстанавливаем .env после pull — git мог затереть наш файл
+            self._regenerate_env_after_pull(site_path)
 
             # Пробуем обычный push
             rc, out, err = run_cmd(
@@ -1027,6 +1044,110 @@ class DeployExecutor:
                 "Push пропущен (нет репо/токена)"
             )
 
+    def _regenerate_env_after_pull(self, site_path: str):
+        """Пересоздаёт .env после git pull — git мог затереть наш .env.
+        
+        Это страховка: даже если .env попал в remote repo (ошибка),
+        мы восстанавливаем правильные значения из контекста деплоя.
+        """
+        env_path = os.path.join(site_path, ".env")
+        app_port = self.ctx.get("app_port", 3000)
+        db_file = self.ctx.get("db_file", "")
+        site_domain = self.ctx.get("site_domain", "")
+        use_ssl = self.ctx.get("use_ssl", False)
+        project_name = self.ctx.get("project_name", "app")
+
+        env_lines = [
+            "# Application",
+            f"APP_NAME={project_name}",
+            f"APP_PORT={app_port}",
+            f"NODE_ENV=production",
+            "",
+            "# Server",
+            f"HOST=0.0.0.0",
+            f"PORT={app_port}",
+        ]
+
+        if db_file:
+            env_lines.extend([
+                "",
+                "# Database (SQLite)",
+                f'DATABASE_URL="file:{db_file}"',
+                f"DB_FILE={db_file}",
+            ])
+        else:
+            db_abs = os.path.join(site_path, "db", f"{project_name}.db")
+            env_lines.extend([
+                "",
+                "# Database (SQLite)",
+                f'DATABASE_URL="file:{db_abs}"',
+                f"DB_FILE={db_abs}",
+            ])
+
+        if site_domain:
+            proto = "https" if use_ssl else "http"
+            env_lines.extend([
+                "",
+                "# Site",
+                f"NEXT_PUBLIC_SITE_URL={proto}://{site_domain}",
+            ])
+        else:
+            env_lines.extend([
+                "",
+                "# Site",
+                f"NEXT_PUBLIC_SITE_URL=http://localhost:{app_port}",
+            ])
+
+        env_lines.extend([
+            "",
+            "# Security",
+            f"SECRET_KEY={generate_password(32)}",
+            "",
+            "# SSL",
+            f"ENABLE_SSL={'true' if use_ssl else 'false'}",
+        ])
+
+        # Сохраняем пользовательские переменные из текущего .env
+        existing_env = {}
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            k, v = line.split('=', 1)
+                            existing_env[k.strip()] = v.strip()
+            except Exception:
+                pass
+
+        known_keys = set()
+        for line in env_lines:
+            if '=' in line and not line.startswith('#'):
+                known_keys.add(line.split('=', 1)[0].strip())
+
+        custom_keys = {k: v for k, v in existing_env.items() if k not in known_keys}
+        if custom_keys:
+            env_lines.append("")
+            env_lines.append("# User variables (preserved)")
+            for k, v in custom_keys.items():
+                env_lines.append(f"{k}={v}")
+
+        try:
+            with open(env_path, 'w') as f:
+                f.write('\n'.join(env_lines) + '\n')
+            console.print("  [green].env восстановлен после git pull[/green]")
+        except Exception:
+            console.print("  [red]Не удалось восстановить .env после git pull[/red]")
+
+        # Также обновляем .env в standalone-директории
+        standalone_dir = os.path.join(site_path, ".next", "standalone")
+        dst_env = os.path.join(standalone_dir, ".env")
+        if os.path.isdir(standalone_dir):
+            try:
+                shutil.copy2(env_path, dst_env)
+            except Exception:
+                pass
+
     # ── Блок 14: Финальные проверки (авто) ───────────────────────────────
 
     def execute_block14(self) -> BlockResult:
@@ -1060,8 +1181,18 @@ class DeployExecutor:
         app_port = self.ctx.get("app_port", 0)
         checks.append(f"Порт: {app_port}" if app_port else "Порт — НЕ ВЫБРАН")
 
-        # Проверяем HTTP-доступ через веб-сервер
+        # Проверяем DNS-резолвинг домена
         domain = self.ctx.get("site_domain", "") or self.ctx.get("domain", "")
+        if domain:
+            rc, out, _ = run_cmd(f"dig +short {domain} A 2>/dev/null | head -1")
+            dns_ip = out.strip()
+            if dns_ip:
+                checks.append(f"DNS {domain} → {dns_ip}")
+            else:
+                checks.append(f"DNS {domain} — НЕ РЕЗОЛВИТСЯ! Настройте A-запись на IP сервера")
+                all_ok = False
+
+        # Проверяем HTTP-доступ через веб-сервер
         if domain:
             rc, out, _ = run_cmd(
                 f"curl -s -o /dev/null -w '%{{http_code}}' "
