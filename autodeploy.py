@@ -21,6 +21,7 @@ import os
 import random
 import socket
 import string
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -635,19 +636,23 @@ class DeployExecutor:
         ]
 
         # Database — SQLite
+        # Важно: DATABASE_URL должен быть АБСОЛЮТНЫМ путём,
+        # т.к. standalone-режим запускается из .next/standalone/
+        # и относительный путь ./db/ будет искаться не там
         if db_file:
-            rel_db = os.path.relpath(db_file, site_path)
             env_lines.extend([
                 "",
                 "# Database (SQLite)",
-                f"DATABASE_URL=\"file:./{rel_db}\"",
+                f"DATABASE_URL=\"file:{db_file}\"",
                 f"DB_FILE={db_file}",
             ])
         else:
+            db_abs = os.path.join(site_path, "db", f"{project_name}.db")
             env_lines.extend([
                 "",
                 "# Database (SQLite)",
-                f"DATABASE_URL=\"file:./db/{project_name}.db\"",
+                f"DATABASE_URL=\"file:{db_abs}\"",
+                f"DB_FILE={db_abs}",
             ])
 
         # Site URL
@@ -802,6 +807,39 @@ class DeployExecutor:
             if not has_error and use_standalone == "yes":
                 if os.path.exists(standalone_path):
                     steps.append("standalone server.js — создан")
+
+                    # Копируем .env в standalone-директорию
+                    # Standalone запускается из .next/standalone/ и читает
+                    # .env оттуда, а не из корня проекта
+                    standalone_dir = os.path.join(site_path, ".next", "standalone")
+                    src_env = os.path.join(site_path, ".env")
+                    dst_env = os.path.join(standalone_dir, ".env")
+                    if os.path.exists(src_env):
+                        try:
+                            shutil.copy2(src_env, dst_env)
+                            steps.append(".env скопирован в .next/standalone/")
+                        except Exception as e:
+                            steps.append(f"Копирование .env в standalone: {e}")
+
+                    # Копируем public/ в standalone (для статики)
+                    src_public = os.path.join(site_path, "public")
+                    dst_public = os.path.join(standalone_dir, "public")
+                    if os.path.isdir(src_public) and not os.path.isdir(dst_public):
+                        try:
+                            shutil.copytree(src_public, dst_public)
+                        except Exception:
+                            pass
+
+                    # Копируем статику .next/static в standalone/.next/static
+                    # (Nginx может раздавать из корневого .next/static,
+                    #  но standalone тоже должен иметь свою копию)
+                    src_static = os.path.join(site_path, ".next", "static")
+                    dst_static = os.path.join(standalone_dir, ".next", "static")
+                    if os.path.isdir(src_static) and not os.path.isdir(dst_static):
+                        try:
+                            shutil.copytree(src_static, dst_static)
+                        except Exception:
+                            pass
                 else:
                     steps.append("standalone server.js — НЕ НАЙДЕН, переключаюсь на Standard")
                     self.ctx["use_standalone"] = "no"
