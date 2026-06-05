@@ -1120,22 +1120,92 @@ server.listen(PORT, '0.0.0.0', () => {{
             )
             run_cmd("pm2 save")
 
+            webhook_details = f"Файл: {webhook_path}\nWebhook порт: {webhook_port}"
+
             if repo_name and github_token:
-                run_cmd(
-                    f"curl -s -X POST "
+                # Определяем внешний IP сервера
+                rc_ip, server_ip, _ = run_cmd(
+                    "curl -s --max-time 5 https://api.ipify.org 2>/dev/null || "
+                    "hostname -I | awk '{print $1}'"
+                )
+                server_ip = server_ip.strip()
+                if not server_ip:
+                    server_ip = "REPLACE_WITH_YOUR_IP"
+
+                webhook_url = f"http://{server_ip}:{webhook_port}/webhook"
+
+                # Формируем JSON для GitHub API через json.dumps (безопасно)
+                webhook_payload = json.dumps({
+                    "name": "web",
+                    "active": True,
+                    "events": ["push"],
+                    "config": {
+                        "url": webhook_url,
+                        "content_type": "json"
+                    }
+                })
+
+                # Записываем payload во временный файл чтобы избежать
+                # проблем с экранированием в shell
+                tmp_dir = os.path.join(site_path, "tmp")
+                os.makedirs(tmp_dir, exist_ok=True)
+                payload_file = os.path.join(tmp_dir, "_webhook_payload.json")
+                with open(payload_file, 'w') as f:
+                    f.write(webhook_payload)
+
+                rc_hook, out_hook, err_hook = run_cmd(
+                    f"curl -s -w '\\n%{{http_code}}' -X POST "
                     f"-H 'Authorization: token {github_token}' "
                     f"-H 'Accept: application/vnd.github.v3+json' "
+                    f"-H 'Content-Type: application/json' "
                     f"https://api.github.com/repos/{repo_name}/hooks "
-                    f"-d '{{\"name\":\"web\",\"active\":true,"
-                    f"\"events\":[\"push\"],"
-                    f"\"config\":{{\"url\":\"http://$(hostname -I | awk '{{print $1}}'):{webhook_port}/webhook\","
-                    f"\"content_type\":\"json\"}}}}'"
+                    f"-d @{payload_file}",
+                    timeout=15
                 )
+
+                # Удаляем временный файл
+                try:
+                    os.remove(payload_file)
+                except OSError:
+                    pass
+
+                # Разбираем ответ: последняя строка — HTTP status code
+                hook_lines = out_hook.strip().split('\n') if out_hook else []
+                hook_status = hook_lines[-1].strip() if hook_lines else "000"
+
+                if hook_status == "201":
+                    webhook_details += f"\nWebhook URL: {webhook_url}"
+                    webhook_details += "\nWebhook зарегистрирован в GitHub"
+                else:
+                    # Попытка парсинга ошибки из JSON-ответа
+                    hook_body = '\n'.join(hook_lines[:-1]) if len(hook_lines) > 1 else out_hook or ""
+                    error_msg = ""
+                    try:
+                        error_data = json.loads(hook_body)
+                        error_msg = error_data.get("message", "")
+                        if error_data.get("errors"):
+                            for e in error_data["errors"]:
+                                error_msg += f" | {e.get('message', str(e))}"
+                    except (json.JSONDecodeError, TypeError):
+                        error_msg = hook_body[:200]
+
+                    webhook_details += f"\nWebhook URL: {webhook_url}"
+                    webhook_details += f"\nWebhook НЕ зарегистрирован (HTTP {hook_status})"
+                    if error_msg:
+                        webhook_details += f"\nПричина: {error_msg[:200]}"
+                    # Не считаем ошибкой всего блока — webhook можно добавить вручную
+                    console.print(
+                        f"  [yellow]Внимание: webhook не удалось зарегистрировать в GitHub "
+                        f"(HTTP {hook_status})[/yellow]"
+                    )
+                    console.print(
+                        f"  [yellow]Добавьте вручную: {webhook_url}[/yellow]"
+                    )
 
             self.ctx["webhook_port"] = webhook_port
             return self._add_result(15, "autodeploy", "Настройка автодеплоя", True,
                                     f"Webhook порт: {webhook_port}",
-                                    f"Файл: {webhook_path}")
+                                    webhook_details)
         except Exception as e:
             return self._add_result(15, "autodeploy", "Настройка автодеплоя", False,
                                     f"Ошибка: {e}")
