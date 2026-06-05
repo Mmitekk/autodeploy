@@ -77,15 +77,6 @@
   .code-label { display: inline-block; background: var(--surface-3); border: 1px solid var(--border); border-radius: 6px 6px 0 0; padding: 4px 12px; font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted); margin-bottom: -1px; position: relative; z-index: 1; }
   .code-label + .code-block { border-radius: 0 var(--radius-sm) var(--radius-sm) var(--radius-sm); }
 
-  .console-output { background: #0a0e14; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px; margin: 12px 0; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.65; overflow-x: auto; max-height: 600px; overflow-y: auto; color: #b3bce0; }
-  .console-output .c-green  { color: var(--green); }
-  .console-output .c-accent { color: var(--accent-light); }
-  .console-output .c-orange { color: var(--orange); }
-  .console-output .c-muted  { color: #555e80; }
-  .console-output .c-white  { color: #fff; }
-  .console-output .c-dim    { color: #6a737d; }
-  .console-output .c-ok     { color: #2ecc71; font-weight: 600; }
-
   .substeps { list-style: none; padding: 0; margin: 12px 0; }
   .substeps li { position: relative; padding: 12px 16px 12px 52px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 10px; line-height: 1.65; }
   .substeps li::before { content: attr(data-num); position: absolute; left: 14px; top: 12px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; border-radius: 50%; font-size: 0.8rem; font-weight: 700; }
@@ -120,58 +111,40 @@
   .status-ok { display: inline-block; background: var(--green-glow); color: var(--green); padding: 2px 10px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; }
   .summary-table .td-result { color: var(--text-muted); font-size: 0.84rem; }
 
-  .flow-diagram { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; margin: 18px 0; padding: 18px; }
-  .flow-node { padding: 10px 18px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; text-align: center; border: 1px solid; white-space: nowrap; }
-  .flow-node.manual { background: rgba(108, 92, 231, 0.12); border-color: var(--accent); color: var(--accent-light); }
-  .flow-node.auto   { background: rgba(0, 184, 148, 0.10); border-color: var(--green); color: var(--green); }
-  .flow-arrow { color: var(--text-muted); font-size: 1.2rem; }
-
   .footer { text-align: center; padding: 40px 24px; color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid var(--border); max-width: 920px; margin: 0 auto; }
   .scroll-top { position: fixed; bottom: 24px; right: 24px; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; border: none; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; z-index: 100; box-shadow: 0 4px 20px var(--accent-glow); }
   .scroll-top.visible { opacity: 1; }
-
-  .code-copy-wrap { display: flex; align-items: center; gap: 0; margin: 12px 0; }
-  .code-copy-wrap .code-block { flex: 1; margin: 0; border-radius: var(--radius-sm) 0 0 var(--radius-sm); padding-right: 14px; display: flex; align-items: center; }
-  .code-copy-wrap .code-block code { font-family: var(--font-mono); font-size: 0.92rem; color: var(--green); }
-  .code-copy-btn { background: #0d1117; border: 1px solid var(--border); border-left: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 14px 16px; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; font-family: var(--font-mono); transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px; height: 100%; min-height: 50px; }
-  .code-copy-btn:hover { color: var(--accent-light); background: var(--surface-2); }
-  .code-copy-btn.copied { color: var(--green); }
 
   .hero-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 100px; padding: 5px 14px; color: var(--green); font-family: var(--font-mono); font-size: 0.88rem; text-decoration: none; transition: all 0.2s; white-space: nowrap; }
   .hero-btn:hover { border-color: var(--green); background: var(--green-glow); }
   .hero-btn svg { width: 14px; height: 14px; }
 
-  /* DEVELOPER TAB */
-  .dev-layout { display: flex; gap: 0; min-height: calc(100vh - 60px); }
-  .dev-sidebar { width: 280px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 0; z-index: 40; }
-  .dev-sidebar::-webkit-scrollbar { width: 4px; }
-  .dev-sidebar::-webkit-scrollbar-track { background: transparent; }
-  .dev-sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-  .dev-main { flex: 1; min-width: 0; padding: 24px 32px 80px; max-width: 900px; }
+  /* Multi-line command block with copy */
+  .cmd-block { background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); margin: 12px 0; display: flex; flex-direction: column; overflow: hidden; }
+  .cmd-block-row { display: flex; align-items: center; }
+  .cmd-block-row + .cmd-block-row { border-top: 1px solid var(--border); }
+  .cmd-block-code { flex: 1; padding: 12px 16px; font-family: var(--font-mono); font-size: 0.92rem; color: var(--green); display: flex; align-items: center; }
+  .cmd-block-copy { background: #0d1117; border: none; border-left: 1px solid var(--border); padding: 12px 16px; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; font-family: var(--font-mono); transition: all 0.2s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .cmd-block-copy:hover { color: var(--accent-light); background: var(--surface-2); }
+  .cmd-block-copy.copied { color: var(--green); }
 
-  .dev-progress-wrap { padding: 0 20px 16px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
-  .dev-progress-label { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
-  .dev-progress-bar { height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+  /* ===== DEVELOPER TAB — same width as user tab ===== */
+  .dev-container { max-width: 920px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  /* Compact progress bar (replaces sidebar) */
+  .dev-progress-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 28px; }
+  .dev-progress-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .dev-progress-label { font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+  .dev-progress-count { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent-light); font-weight: 700; }
+  .dev-progress-bar { height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; margin-bottom: 16px; }
   .dev-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 3px; transition: width 0.4s ease; width: 0%; }
-
-  .dev-sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; font-size: 0.85rem; }
-  .dev-sidebar-item:hover { background: var(--surface-2); }
-  .dev-sidebar-item.active { background: var(--surface-2); border-left-color: var(--accent-light); }
-  .dev-sidebar-item.done { border-left-color: var(--green); }
-  .dev-sidebar-icon { width: 20px; text-align: center; flex-shrink: 0; font-size: 0.9rem; }
-  .dev-sidebar-item.done .dev-sidebar-icon { color: var(--green); }
-  .dev-sidebar-item.active .dev-sidebar-icon { color: var(--accent-light); }
-  .dev-sidebar-item.pending .dev-sidebar-icon { color: var(--text-muted); }
-  .dev-sidebar-num { color: var(--text-muted); font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); min-width: 22px; }
-  .dev-sidebar-item.active .dev-sidebar-num { color: var(--accent-light); }
-  .dev-sidebar-item.done .dev-sidebar-num { color: var(--green); }
-  .dev-sidebar-title { color: var(--text-muted); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .dev-sidebar-item.active .dev-sidebar-title { color: var(--text); font-weight: 600; }
-  .dev-sidebar-item.done .dev-sidebar-title { color: var(--text); }
-  .dev-sidebar-pulse { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; animation: devPulse 1.5s ease-in-out infinite; }
-  @keyframes devPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-  .dev-sidebar-item.active .dev-sidebar-pulse { background: var(--accent-light); }
-  .dev-sidebar-item.pending .dev-sidebar-pulse, .dev-sidebar-item.done .dev-sidebar-pulse { display: none; }
+  .dev-steps-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dev-step-dot { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 100px; font-size: 0.72rem; font-weight: 600; font-family: var(--font-mono); cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); }
+  .dev-step-dot:hover { border-color: var(--accent); color: var(--accent-light); background: var(--accent-glow); }
+  .dev-step-dot.active { border-color: var(--accent-light); color: var(--accent-light); background: var(--accent-glow); }
+  .dev-step-dot.done { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+  .dev-reset-link { background: none; border: none; color: var(--text-muted); font-size: 0.78rem; cursor: pointer; padding: 0; font-family: var(--font); transition: color 0.2s; }
+  .dev-reset-link:hover { color: var(--red); }
 
   .dev-header { margin-bottom: 32px; }
   .dev-header-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 100px; padding: 5px 16px; margin-bottom: 16px; }
@@ -193,6 +166,8 @@
   .dev-run-cmd-btn.copied { color: var(--green); }
   .dev-header-tip { color: var(--text-muted); font-size: 0.88rem; font-style: italic; }
 
+  @keyframes devPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
   .dev-block { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 28px; overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s; }
   .dev-block:hover { border-color: var(--accent); }
   .dev-block.active-block { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
@@ -205,7 +180,7 @@
   .dev-block-bg.auto { background: linear-gradient(180deg, rgba(0,184,148,0.06), transparent); }
   .dev-block-bg.check { background: linear-gradient(180deg, rgba(253,203,110,0.06), transparent); }
 
-  .dev-block-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; position: relative; z-index: 1; }
+  .dev-block-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; position: relative; z-index: 1; flex-wrap: wrap; gap: 8px; }
   .dev-block-header-left { display: flex; align-items: center; gap: 12px; }
   .dev-block-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
   .dev-block.manual .dev-block-icon { background: var(--accent-glow); color: var(--accent-light); }
@@ -293,31 +268,12 @@
   .dev-http-code.c401 { color: var(--red); }
   .dev-http-desc { font-size: 0.82rem; color: var(--text-muted); }
 
-  .dev-nav-btns { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); }
-  .dev-nav-btn { padding: 10px 20px; border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); display: flex; align-items: center; gap: 8px; }
-  .dev-nav-btn:hover { border-color: var(--accent); color: var(--accent-light); background: var(--accent-glow); }
-  .dev-nav-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
-
-  .dev-reset-btn { position: fixed; bottom: 24px; left: 24px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); z-index: 90; display: flex; align-items: center; gap: 6px; }
-  .dev-reset-btn:hover { border-color: var(--red); color: var(--red); }
-
-  .dev-sidebar-toggle { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 100px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid var(--accent); background: var(--accent); color: #fff; z-index: 90; box-shadow: 0 4px 20px var(--accent-glow); align-items: center; gap: 8px; }
-
   .dev-summary { margin-top: 40px; padding: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
   .dev-summary-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
   .dev-commands-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.85rem; }
   .dev-commands-table th { background: var(--surface-3); padding: 10px 14px; text-align: left; border: 1px solid var(--border); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
   .dev-commands-table td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
   .dev-commands-table code { font-family: var(--font-mono); font-size: 0.82rem; color: var(--orange); background: #0d1117; padding: 1px 5px; border-radius: 3px; }
-
-  /* Multi-line command block with copy */
-  .cmd-block { background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); margin: 12px 0; display: flex; flex-direction: column; overflow: hidden; }
-  .cmd-block-row { display: flex; align-items: center; }
-  .cmd-block-row + .cmd-block-row { border-top: 1px solid var(--border); }
-  .cmd-block-code { flex: 1; padding: 12px 16px; font-family: var(--font-mono); font-size: 0.92rem; color: var(--green); display: flex; align-items: center; }
-  .cmd-block-copy { background: #0d1117; border: none; border-left: 1px solid var(--border); padding: 12px 16px; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; font-family: var(--font-mono); transition: all 0.2s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-  .cmd-block-copy:hover { color: var(--accent-light); background: var(--surface-2); }
-  .cmd-block-copy.copied { color: var(--green); }
 
   @media (max-width: 640px) {
     .hero { padding: 40px 16px 28px; }
@@ -327,17 +283,11 @@
     .tab-btn { padding: 12px 16px; font-size: 0.88rem; }
     .summary-table { font-size: 0.8rem; }
     .summary-table th, .summary-table td { padding: 8px 10px; }
-  }
-  @media (max-width: 860px) {
-    .dev-layout { flex-direction: column; }
-    .dev-sidebar { width: 100%; position: relative; height: auto; max-height: 0; overflow: hidden; border-right: none; border-bottom: 1px solid var(--border); transition: max-height 0.3s ease; padding: 0; }
-    .dev-sidebar.open { max-height: 1000px; padding: 16px 0; }
-    .dev-sidebar-toggle { display: flex; }
-    .dev-main { padding: 20px 16px 80px; }
     .dev-cols { grid-template-columns: 1fr; }
     .dev-http-cards { grid-template-columns: 1fr; }
     .dev-block-body { padding: 14px 18px 20px; }
-    .dev-block-header { padding: 16px 18px 0; flex-wrap: wrap; gap: 8px; }
+    .dev-block-header { padding: 16px 18px 0; }
+    .dev-step-dot { font-size: 0; padding: 6px; min-width: 28px; justify-content: center; }
   }
 </style>
 </head>
@@ -452,276 +402,199 @@
 
 <!-- TAB 2 — ДЛЯ РАЗРАБОТЧИКА -->
 <div class="tab-panel" id="tab-tech">
-  <div class="dev-layout">
-    <!-- Sidebar -->
-    <aside class="dev-sidebar" id="devSidebar">
-      <div class="dev-progress-wrap">
-        <div class="dev-progress-label">
-          <span>Прогресс</span>
-          <span id="devProgressText">0 / 15</span>
-        </div>
-        <div class="dev-progress-bar">
-          <div class="dev-progress-fill" id="devProgressFill"></div>
-        </div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="1" onclick="devScrollToBlock(1)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">01</div>
-        <div class="dev-sidebar-title">Название и путь</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="2" onclick="devScrollToBlock(2)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">02</div>
-        <div class="dev-sidebar-title">Свободный порт</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="3" onclick="devScrollToBlock(3)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">03</div>
-        <div class="dev-sidebar-title">Режим запуска</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="4" onclick="devScrollToBlock(4)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">04</div>
-        <div class="dev-sidebar-title">Домен и SSL</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="5" onclick="devScrollToBlock(5)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">05</div>
-        <div class="dev-sidebar-title">PM2 конфигурация</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="6" onclick="devScrollToBlock(6)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">06</div>
-        <div class="dev-sidebar-title">Веб-сервер</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="7" onclick="devScrollToBlock(7)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">07</div>
-        <div class="dev-sidebar-title">GitHub Token</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="8" onclick="devScrollToBlock(8)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">08</div>
-        <div class="dev-sidebar-title">Поиск БД</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="9" onclick="devScrollToBlock(9)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">09</div>
-        <div class="dev-sidebar-title">.gitignore</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="10" onclick="devScrollToBlock(10)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">10</div>
-        <div class="dev-sidebar-title">.env</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="11" onclick="devScrollToBlock(11)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">11</div>
-        <div class="dev-sidebar-title">Сборка и запуск</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="12" onclick="devScrollToBlock(12)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">12</div>
-        <div class="dev-sidebar-title">Проверка репо</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="13" onclick="devScrollToBlock(13)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">13</div>
-        <div class="dev-sidebar-title">Коммит и пуш</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="14" onclick="devScrollToBlock(14)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">14</div>
-        <div class="dev-sidebar-title">Финальные проверки</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-      <div class="dev-sidebar-item pending" data-block="15" onclick="devScrollToBlock(15)">
-        <div class="dev-sidebar-icon">&#9675;</div>
-        <div class="dev-sidebar-num">15</div>
-        <div class="dev-sidebar-title">Автодеплой</div>
-        <div class="dev-sidebar-pulse"></div>
-      </div>
-    </aside>
+  <div class="dev-container">
 
-    <!-- Main content -->
-    <div class="dev-main">
-      <!-- Header -->
-      <div class="dev-header">
-        <div class="dev-header-badge">
-          <div class="dev-header-badge-dot"></div>
-          <div class="dev-header-badge-text">v8 &middot; PYTHON SCRIPT</div>
-        </div>
-        <div class="dev-header-title">
-          <span class="dev-header-title-accent">AutoDeploy</span>
-          <span class="dev-header-title-sub">Setup</span>
-        </div>
-        <div class="dev-header-subtitle">Пошаговая инструкция для настройки автодеплоя &mdash; Next.js + Prisma + SQLite на VDS</div>
-        <div class="dev-tech-badges">
-          <span class="dev-tech-badge">Next.js</span>
-          <span class="dev-tech-badge">Prisma</span>
-          <span class="dev-tech-badge">SQLite</span>
-          <span class="dev-tech-badge">PM2</span>
-          <span class="dev-tech-badge">Nginx</span>
-          <span class="dev-tech-badge">GitHub</span>
-        </div>
-        <div class="dev-run-cmd">
-          <div class="dev-run-cmd-row">
-            <div class="dev-run-cmd-input first">cd /var/www</div>
-          </div>
-          <div class="dev-run-cmd-row">
-            <div class="dev-run-cmd-input last">python3 autodeploy.py</div>
-            <button class="dev-run-cmd-btn" onclick="devCopyRun(this)">&#128203; Копировать</button>
-          </div>
-        </div>
-        <div class="dev-header-tip">&#128161; Отвечайте на вопросы скрипта или нажимайте Enter для значения по умолчанию. Ниже &mdash; описание каждого шага с пояснениями.</div>
+    <!-- Compact progress card (replaces sidebar) -->
+    <div class="dev-progress-card">
+      <div class="dev-progress-top">
+        <span class="dev-progress-label">Прогресс установки</span>
+        <span class="dev-progress-count" id="devProgressText">0 / 15</span>
+        <button class="dev-reset-link" onclick="devResetProgress()" title="Сбросить">&#8635; Сбросить</button>
       </div>
+      <div class="dev-progress-bar"><div class="dev-progress-fill" id="devProgressFill"></div></div>
+      <div class="dev-steps-row" id="devStepsRow">
+        <div class="dev-step-dot pending" data-block="1" onclick="devScrollToBlock(1)">01</div>
+        <div class="dev-step-dot pending" data-block="2" onclick="devScrollToBlock(2)">02</div>
+        <div class="dev-step-dot pending" data-block="3" onclick="devScrollToBlock(3)">03</div>
+        <div class="dev-step-dot pending" data-block="4" onclick="devScrollToBlock(4)">04</div>
+        <div class="dev-step-dot pending" data-block="5" onclick="devScrollToBlock(5)">05</div>
+        <div class="dev-step-dot pending" data-block="6" onclick="devScrollToBlock(6)">06</div>
+        <div class="dev-step-dot pending" data-block="7" onclick="devScrollToBlock(7)">07</div>
+        <div class="dev-step-dot pending" data-block="8" onclick="devScrollToBlock(8)">08</div>
+        <div class="dev-step-dot pending" data-block="9" onclick="devScrollToBlock(9)">09</div>
+        <div class="dev-step-dot pending" data-block="10" onclick="devScrollToBlock(10)">10</div>
+        <div class="dev-step-dot pending" data-block="11" onclick="devScrollToBlock(11)">11</div>
+        <div class="dev-step-dot pending" data-block="12" onclick="devScrollToBlock(12)">12</div>
+        <div class="dev-step-dot pending" data-block="13" onclick="devScrollToBlock(13)">13</div>
+        <div class="dev-step-dot pending" data-block="14" onclick="devScrollToBlock(14)">14</div>
+        <div class="dev-step-dot pending" data-block="15" onclick="devScrollToBlock(15)">15</div>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="dev-header">
+      <div class="dev-header-badge">
+        <div class="dev-header-badge-dot"></div>
+        <div class="dev-header-badge-text">v8 &middot; PYTHON SCRIPT</div>
+      </div>
+      <div class="dev-header-title">
+        <span class="dev-header-title-accent">AutoDeploy</span>
+        <span class="dev-header-title-sub">Setup</span>
+      </div>
+      <div class="dev-header-subtitle">Пошаговая инструкция для настройки автодеплоя &mdash; Next.js + Prisma + SQLite на VDS</div>
+      <div class="dev-tech-badges">
+        <span class="dev-tech-badge">Next.js</span>
+        <span class="dev-tech-badge">Prisma</span>
+        <span class="dev-tech-badge">SQLite</span>
+        <span class="dev-tech-badge">PM2</span>
+        <span class="dev-tech-badge">Nginx</span>
+        <span class="dev-tech-badge">GitHub</span>
+      </div>
+      <div class="dev-run-cmd">
+        <div class="dev-run-cmd-row">
+          <div class="dev-run-cmd-input first">cd /var/www</div>
+        </div>
+        <div class="dev-run-cmd-row">
+          <div class="dev-run-cmd-input last">python3 autodeploy.py</div>
+          <button class="dev-run-cmd-btn" onclick="devCopyRun(this)">&#128203; Копировать</button>
+        </div>
+      </div>
+      <div class="dev-header-tip">&#128161; Отвечайте на вопросы скрипта или нажимайте Enter для значения по умолчанию. Ниже &mdash; описание каждого шага с пояснениями.</div>
+    </div>
 
 
-      <div class="dev-block manual" id="devBlock1" data-block="1">
-        <div class="dev-block-accent manual"></div>
-        <div class="dev-block-bg manual"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9997;</div>
-            <div><div class="dev-block-num">БЛОК 01 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Название проекта и путь</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(1, this)">Отметить &check;</button>
+    <div class="dev-block manual" id="devBlock1" data-block="1">
+      <div class="dev-block-accent manual"></div>
+      <div class="dev-block-bg manual"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9997;</div>
+          <div><div class="dev-block-num">БЛОК 01 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Название проекта и путь</div></div>
         </div>
-        <div class="dev-block-body">
-          <div class="info-box info"><div class="icon">&#9432;</div><p>Скрипт автоматически определит структуру проекта Next.js и проверит наличие ключевых файлов</p></div>
-          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Название проекта</span><span class="dev-prompt-default">[my-project]</span></div>
-          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Путь к сайту на сервере</span><span class="dev-prompt-default">[/var/www/my-project]</span></div>
-          <div class="dev-term">
-            <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
-            <div class="dev-term-body"><span style="color:#00b894">&#10003;</span> Next.js project detected<br><span style="color:#00b894">&#10003;</span> package.json found<br><span style="color:#00b894">&#10003;</span> next.config.ts found<br><span style="color:#a29bfe">Domain:</span> my-project</div>
-          </div>
-          <div class="info-box warning"><div class="icon">&#9888;</div><p>Если директория не существует, она будет создана автоматически</p></div>
-        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(1, this)">Отметить &check;</button>
       </div>
-
-
-      <div class="dev-block auto" id="devBlock2" data-block="2">
-        <div class="dev-block-accent auto"></div>
-        <div class="dev-block-bg auto"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9889;</div>
-            <div><div class="dev-block-num">БЛОК 02 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Выбор свободного порта</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(2, this)">Отметить &check;</button>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Скрипт автоматически определит структуру проекта Next.js и проверит наличие ключевых файлов</p></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Название проекта</span><span class="dev-prompt-default">[my-project]</span></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Путь к сайту на сервере</span><span class="dev-prompt-default">[/var/www/my-project]</span></div>
+        <div class="dev-term">
+          <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+          <div class="dev-term-body"><span style="color:#00b894">&#10003;</span> Next.js project detected<br><span style="color:#00b894">&#10003;</span> package.json found<br><span style="color:#00b894">&#10003;</span> next.config.ts found<br><span style="color:#a29bfe">Domain:</span> my-project</div>
         </div>
-        <div class="dev-block-body">
-          <div class="info-box info"><div class="icon">&#9432;</div><p>Сканирование портов 3000-9999 для поиска свободного</p></div>
-          <div class="dev-code">
-            <div class="dev-code-header"><span class="dev-code-lang">port scan</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
-            <div class="dev-code-body">  Порт 3000 ... занят (ss)
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Если директория не существует, она будет создана автоматически</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock2" data-block="2">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 02 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Выбор свободного порта</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(2, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Сканирование портов 3000-9999 для поиска свободного</p></div>
+        <div class="dev-code">
+          <div class="dev-code-header"><span class="dev-code-lang">port scan</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+          <div class="dev-code-body">  Порт 3000 ... занят (ss)
   Порт 3001 ... занят (socket test)
   Порт 3002 ... <span style="color:#00b894">свободен</span> &#10003;</div>
-          </div>
-          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Порт для Next.js</span><span class="dev-prompt-default">[3002]</span></div>
-          <div class="info-box tip"><div class="icon">&#10003;</div><p>Один проект &mdash; один порт. PM2 запускает приложение на выбранном порту</p></div>
         </div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Порт для Next.js</span><span class="dev-prompt-default">[3002]</span></div>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>Один проект &mdash; один порт. PM2 запускает приложение на выбранном порту</p></div>
       </div>
+    </div>
 
 
-      <div class="dev-block manual" id="devBlock3" data-block="3">
-        <div class="dev-block-accent manual"></div>
-        <div class="dev-block-bg manual"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9997;</div>
-            <div><div class="dev-block-num">БЛОК 03 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Режим запуска</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(3, this)">Отметить &check;</button>
+    <div class="dev-block manual" id="devBlock3" data-block="3">
+      <div class="dev-block-accent manual"></div>
+      <div class="dev-block-bg manual"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9997;</div>
+          <div><div class="dev-block-num">БЛОК 03 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Режим запуска</div></div>
         </div>
-        <div class="dev-block-body">
-          <div class="info-box info"><div class="icon">&#9432;</div><p>Проверка output: &laquo;standalone&raquo; в next.config.*</p></div>
-          <div class="dev-choice">
-            <div class="dev-choice-option selected">
-              <div class="dev-choice-option-header"><div class="dev-choice-option-num">1</div><div class="dev-choice-option-title">Standalone (рекомендуется)</div></div>
-              <div class="dev-choice-option-desc">node .next/standalone/server.js &mdash; быстрее, меньше памяти</div>
-            </div>
-            <div class="dev-choice-option">
-              <div class="dev-choice-option-header"><div class="dev-choice-option-num">2</div><div class="dev-choice-option-title">Standard</div></div>
-              <div class="dev-choice-option-desc">npx next start &mdash; требует полный node_modules</div>
-            </div>
-            <div class="dev-choice-option">
-              <div class="dev-choice-option-header"><div class="dev-choice-option-num">3</div><div class="dev-choice-option-title">Автоопределение</div></div>
-              <div class="dev-choice-option-desc">анализ конфига после сборки</div>
-            </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(3, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Проверка output: &laquo;standalone&raquo; в next.config.*</p></div>
+        <div class="dev-choice">
+          <div class="dev-choice-option selected">
+            <div class="dev-choice-option-header"><div class="dev-choice-option-num">1</div><div class="dev-choice-option-title">Standalone (рекомендуется)</div></div>
+            <div class="dev-choice-option-desc">node .next/standalone/server.js &mdash; быстрее, меньше памяти</div>
           </div>
-          <div class="dev-code">
-            <div class="dev-code-header"><span class="dev-code-lang">next.config.ts</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
-            <div class="dev-code-body">const nextConfig = {
+          <div class="dev-choice-option">
+            <div class="dev-choice-option-header"><div class="dev-choice-option-num">2</div><div class="dev-choice-option-title">Standard</div></div>
+            <div class="dev-choice-option-desc">npx next start &mdash; требует полный node_modules</div>
+          </div>
+          <div class="dev-choice-option">
+            <div class="dev-choice-option-header"><div class="dev-choice-option-num">3</div><div class="dev-choice-option-title">Автоопределение</div></div>
+            <div class="dev-choice-option-desc">анализ конфига после сборки</div>
+          </div>
+        </div>
+        <div class="dev-code">
+          <div class="dev-code-header"><span class="dev-code-lang">next.config.ts</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+          <div class="dev-code-body">const nextConfig = {
   output: "standalone",
 };
 export default nextConfig;</div>
-          </div>
-          <div class="info-box warning"><div class="icon">&#9888;</div><p>Если выбран Standalone, но server.js не создан после сборки &mdash; автоматическое переключение на Standard</p></div>
         </div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Если выбран Standalone, но server.js не создан после сборки &mdash; автоматическое переключение на Standard</p></div>
       </div>
+    </div>
 
 
-      <div class="dev-block manual" id="devBlock4" data-block="4">
-        <div class="dev-block-accent manual"></div>
-        <div class="dev-block-bg manual"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9997;</div>
-            <div><div class="dev-block-num">БЛОК 04 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Домен и SSL</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(4, this)">Отметить &check;</button>
+    <div class="dev-block manual" id="devBlock4" data-block="4">
+      <div class="dev-block-accent manual"></div>
+      <div class="dev-block-bg manual"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9997;</div>
+          <div><div class="dev-block-num">БЛОК 04 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Домен и SSL</div></div>
         </div>
-        <div class="dev-block-body">
-          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Домен сайта (можно пропустить)</span><span class="dev-prompt-default">[localhost]</span></div>
-          <div class="dev-cols">
-            <div class="dev-col">
-              <div class="dev-col-title">&#127760; Если домен указан</div>
-              <div class="dev-col-content">Nginx/Apache vhost с <code>proxy_pass</code><br>SSL через Let&rsquo;s Encrypt<br>Автоматический редирект HTTP&rarr;HTTPS</div>
-            </div>
-            <div class="dev-col">
-              <div class="dev-col-title">&#128187; Если без домена</div>
-              <div class="dev-col-content">Доступ только по <code>http://IP:port</code><br>Apache/Nginx не настраивается<br>SSL недоступен</div>
-            </div>
-          </div>
-          <div class="dev-yesno"><span class="dev-yesno-label">Настроить SSL (Let&rsquo;s Encrypt)?</span><span class="dev-yesno-option dev-yesno-yes">Y</span><span class="dev-yesno-option dev-yesno-no">N (по умолчанию)</span></div>
-          <div class="info-box warning"><div class="icon">&#9888;</div><p>Для SSL домен должен быть привязан к IP сервера через DNS A-запись</p></div>
-        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(4, this)">Отметить &check;</button>
       </div>
-
-
-      <div class="dev-block auto" id="devBlock5" data-block="5">
-        <div class="dev-block-accent auto"></div>
-        <div class="dev-block-bg auto"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9889;</div>
-            <div><div class="dev-block-num">БЛОК 05 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Подготовка PM2 конфигурации</div></div>
+      <div class="dev-block-body">
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Домен сайта (можно пропустить)</span><span class="dev-prompt-default">[localhost]</span></div>
+        <div class="dev-cols">
+          <div class="dev-col">
+            <div class="dev-col-title">&#127760; Если домен указан</div>
+            <div class="dev-col-content">Nginx/Apache vhost с <code>proxy_pass</code><br>SSL через Let&rsquo;s Encrypt<br>Автоматический редирект HTTP&rarr;HTTPS</div>
           </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(5, this)">Отметить &check;</button>
+          <div class="dev-col">
+            <div class="dev-col-title">&#128187; Если без домена</div>
+            <div class="dev-col-content">Доступ только по <code>http://IP:port</code><br>Apache/Nginx не настраивается<br>SSL недоступен</div>
+          </div>
         </div>
-        <div class="dev-block-body">
-          <div class="info-box info"><div class="icon">&#9432;</div><p>PM2 &mdash; менеджер процессов Node.js. Обеспечивает автозапуск и перезапуск при падении</p></div>
-          <div class="dev-term">
-            <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
-            <div class="dev-term-body"><span style="color:#a29bfe">Creating</span> ecosystem.config.js...<br>mode: standalone<br>script: .next/standalone/server.js<br>port: 3002<br><span style="color:#00b894">&#10003; ecosystem.config.js created</span></div>
-          </div>
-          <div class="dev-code">
-            <div class="dev-code-header"><span class="dev-code-lang">ecosystem.config.js</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
-            <div class="dev-code-body">module.exports = {
+        <div class="dev-yesno"><span class="dev-yesno-label">Настроить SSL (Let&rsquo;s Encrypt)?</span><span class="dev-yesno-option dev-yesno-yes">Y</span><span class="dev-yesno-option dev-yesno-no">N (по умолчанию)</span></div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Для SSL домен должен быть привязан к IP сервера через DNS A-запись</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock5" data-block="5">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 05 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Подготовка PM2 конфигурации</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(5, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>PM2 &mdash; менеджер процессов Node.js. Обеспечивает автозапуск и перезапуск при падении</p></div>
+        <div class="dev-term">
+          <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+          <div class="dev-term-body"><span style="color:#a29bfe">Creating</span> ecosystem.config.js...<br>mode: standalone<br>script: .next/standalone/server.js<br>port: 3002<br><span style="color:#00b894">&#10003; ecosystem.config.js created</span></div>
+        </div>
+        <div class="dev-code">
+          <div class="dev-code-header"><span class="dev-code-lang">ecosystem.config.js</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+          <div class="dev-code-body">module.exports = {
   apps: [{
     name: "my-project",
     script: ".next/standalone/server.js",
@@ -730,100 +603,100 @@ export default nextConfig;</div>
     max_memory_restart: "500M"
   }]
 };</div>
-          </div>
         </div>
       </div>
+    </div>
 
 
-      <div class="dev-block auto" id="devBlock6" data-block="6">
-        <div class="dev-block-accent auto"></div>
-        <div class="dev-block-bg auto"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9889;</div>
-            <div><div class="dev-block-num">БЛОК 06 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Конфигурация веб-сервера</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(6, this)">Отметить &check;</button>
+    <div class="dev-block auto" id="devBlock6" data-block="6">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 06 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Конфигурация веб-сервера</div></div>
         </div>
-        <div class="dev-block-body">
-          <div class="info-box info"><div class="icon">&#9432;</div><p>Автоопределение веб-сервера, слушающего порт 80 (Nginx или Apache)</p></div>
-          <div class="dev-cols">
-            <div class="dev-col">
-              <div class="dev-col-title">&#128240; Nginx</div>
-              <div class="dev-col-content"><code>proxy_pass http://127.0.0.1:3002</code><br><code>proxy_set_header Upgrade</code><br><code>alias /.next/static/</code></div>
-            </div>
-            <div class="dev-col">
-              <div class="dev-col-title">&#128240; Apache</div>
-              <div class="dev-col-content"><code>ProxyPass / http://127.0.0.1:3002</code><br><code>ProxyPassReverse</code><br><code>DirectoryIndex</code></div>
-            </div>
-          </div>
-          <div class="dev-term">
-            <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
-            <div class="dev-term-body"><span style="color:#a29bfe">Detected:</span> Nginx on port 80<br><span style="color:#a29bfe">Creating</span> /etc/nginx/sites-available/my-project...<br><span style="color:#a29bfe">Enabling</span> site...<br><span style="color:#fdcb6e">Reloading</span> nginx...<br><span style="color:#00b894">&#10003; Nginx configured</span></div>
-          </div>
-          <div class="info-box tip"><div class="icon">&#10003;</div><p>WebSocket прокси настроен автоматически через <code>proxy_set_header Upgrade</code></p></div>
-        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(6, this)">Отметить &check;</button>
       </div>
-
-
-      <div class="dev-block manual" id="devBlock7" data-block="7">
-        <div class="dev-block-accent manual"></div>
-        <div class="dev-block-bg manual"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9997;</div>
-            <div><div class="dev-block-num">БЛОК 07 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">GitHub Token &amp; Repository</div></div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Автоопределение веб-сервера, слушающего порт 80 (Nginx или Apache)</p></div>
+        <div class="dev-cols">
+          <div class="dev-col">
+            <div class="dev-col-title">&#128240; Nginx</div>
+            <div class="dev-col-content"><code>proxy_pass http://127.0.0.1:3002</code><br><code>proxy_set_header Upgrade</code><br><code>alias /.next/static/</code></div>
           </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(7, this)">Отметить &check;</button>
+          <div class="dev-col">
+            <div class="dev-col-title">&#128240; Apache</div>
+            <div class="dev-col-content"><code>ProxyPass / http://127.0.0.1:3002</code><br><code>ProxyPassReverse</code><br><code>DirectoryIndex</code></div>
+          </div>
         </div>
-        <div class="dev-block-body">
-          <div class="info-box info"><div class="icon">&#9432;</div><p>Используется только HTTPS + Token (без SSH-ключей)</p></div>
-          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Логин владельца GitHub</span><span class="dev-prompt-default">[]</span></div>
-          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">GitHub Personal Access Token</span><span class="dev-prompt-default">[скрытый ввод]</span></div>
-          <div class="info-box tip"><div class="icon">&#10003;</div><p><strong>Создание Fine-grained токена:</strong><br>1. Settings &rarr; Developer settings &rarr; Personal access tokens<br>2. Fine-grained tokens &rarr; Generate new token<br>3. Выберите Repository access &rarr; All repositories<br>4. Права: Contents (R/W), Webhooks (R/W), Administration (R/W)</p></div>
-          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Название репозитория (owner/repo)</span><span class="dev-prompt-default">[]</span></div>
-          <div class="dev-yesno"><span class="dev-yesno-label">Приватный репозиторий?</span><span class="dev-yesno-option dev-yesno-yes">Y (по умолчанию)</span><span class="dev-yesno-option dev-yesno-no">N</span></div>
-          <div class="info-box warning"><div class="icon">&#9888;</div><p>Fine-grained токены могут вернуть 403 при создании репо через API</p></div>
+        <div class="dev-term">
+          <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+          <div class="dev-term-body"><span style="color:#a29bfe">Detected:</span> Nginx on port 80<br><span style="color:#a29bfe">Creating</span> /etc/nginx/sites-available/my-project...<br><span style="color:#a29bfe">Enabling</span> site...<br><span style="color:#fdcb6e">Reloading</span> nginx...<br><span style="color:#00b894">&#10003; Nginx configured</span></div>
         </div>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>WebSocket прокси настроен автоматически через <code>proxy_set_header Upgrade</code></p></div>
       </div>
+    </div>
 
 
-      <div class="dev-block auto" id="devBlock8" data-block="8">
-        <div class="dev-block-accent auto"></div>
-        <div class="dev-block-bg auto"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9889;</div>
-            <div><div class="dev-block-num">БЛОК 08 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Поиск файла базы данных</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(8, this)">Отметить &check;</button>
+    <div class="dev-block manual" id="devBlock7" data-block="7">
+      <div class="dev-block-accent manual"></div>
+      <div class="dev-block-bg manual"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9997;</div>
+          <div><div class="dev-block-num">БЛОК 07 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">GitHub Token &amp; Repository</div></div>
         </div>
-        <div class="dev-block-body">
-          <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматический поиск *.db файлов в директории проекта (до 3 уровней)</p></div>
-          <div class="dev-term">
-            <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
-            <div class="dev-term-body"><span style="color:#a29bfe">Scanning</span> /var/www/my-project/...<br>  Level 1: *.db ... not found<br>  Level 2: db/*.db ... <span style="color:#00b894">found!</span><br><span style="color:#00b894">&#10003;</span> Database: db/custom.db</div>
-          </div>
-          <div class="info-box warning"><div class="icon">&#9888;</div><p>База данных НЕ попадает в Git (*.db в .gitignore)</p></div>
-        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(7, this)">Отметить &check;</button>
       </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Используется только HTTPS + Token (без SSH-ключей)</p></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Логин владельца GitHub</span><span class="dev-prompt-default">[]</span></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">GitHub Personal Access Token</span><span class="dev-prompt-default">[скрытый ввод]</span></div>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p><strong>Создание Fine-grained токена:</strong><br>1. Settings &rarr; Developer settings &rarr; Personal access tokens<br>2. Fine-grained tokens &rarr; Generate new token<br>3. Выберите Repository access &rarr; All repositories<br>4. Права: Contents (R/W), Webhooks (R/W), Administration (R/W)</p></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Название репозитория (owner/repo)</span><span class="dev-prompt-default">[]</span></div>
+        <div class="dev-yesno"><span class="dev-yesno-label">Приватный репозиторий?</span><span class="dev-yesno-option dev-yesno-yes">Y (по умолчанию)</span><span class="dev-yesno-option dev-yesno-no">N</span></div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Fine-grained токены могут вернуть 403 при создании репо через API</p></div>
+      </div>
+    </div>
 
 
-      <div class="dev-block auto" id="devBlock9" data-block="9">
-        <div class="dev-block-accent auto"></div>
-        <div class="dev-block-bg auto"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9889;</div>
-            <div><div class="dev-block-num">БЛОК 09 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Создание .gitignore</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(9, this)">Отметить &check;</button>
+    <div class="dev-block auto" id="devBlock8" data-block="8">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 08 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Поиск файла базы данных</div></div>
         </div>
-        <div class="dev-block-body">
-          <div class="info-box success"><div class="icon">&#10003;</div><p>Полностью автоматический блок &mdash; без ввода данных</p></div>
-          <div class="dev-code">
-            <div class="dev-code-header"><span class="dev-code-lang">.gitignore</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
-            <div class="dev-code-body">node_modules/
+        <button class="dev-block-done-btn" onclick="devToggleDone(8, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматический поиск *.db файлов в директории проекта (до 3 уровней)</p></div>
+        <div class="dev-term">
+          <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+          <div class="dev-term-body"><span style="color:#a29bfe">Scanning</span> /var/www/my-project/...<br>  Level 1: *.db ... not found<br>  Level 2: db/*.db ... <span style="color:#00b894">found!</span><br><span style="color:#00b894">&#10003;</span> Database: db/custom.db</div>
+        </div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>База данных НЕ попадает в Git (*.db в .gitignore)</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock9" data-block="9">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 09 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Создание .gitignore</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(9, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box success"><div class="icon">&#10003;</div><p>Полностью автоматический блок &mdash; без ввода данных</p></div>
+        <div class="dev-code">
+          <div class="dev-code-header"><span class="dev-code-lang">.gitignore</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+          <div class="dev-code-body">node_modules/
 .next/
 *.db
 *.db-journal
@@ -836,205 +709,179 @@ autodeploy.py
 webhook-server.js
 ecosystem.config.js
 .DS_Store</div>
+        </div>
+        <div class="dev-cols">
+          <div class="dev-col">
+            <div class="dev-col-title">&#10003; В Git (исходный код)</div>
+            <div class="dev-col-content"><code>src/</code>, <code>prisma/</code>, <code>public/</code><br><code>package.json</code>, <code>next.config.ts</code><br><code>tsconfig.json</code>, <code>tailwind.config.ts</code></div>
           </div>
-          <div class="dev-cols">
-            <div class="dev-col">
-              <div class="dev-col-title">&#10003; В Git (исходный код)</div>
-              <div class="dev-col-content"><code>src/</code>, <code>prisma/</code>, <code>public/</code><br><code>package.json</code>, <code>next.config.ts</code><br><code>tsconfig.json</code>, <code>tailwind.config.ts</code></div>
-            </div>
-            <div class="dev-col">
-              <div class="dev-col-title">&#10008; НЕ в Git (секреты, сборка, БД)</div>
-              <div class="dev-col-content"><code>.env</code> &mdash; переменные окружения<br><code>*.db</code> &mdash; база данных<br><code>node_modules/</code>, <code>.next/</code></div>
-            </div>
+          <div class="dev-col">
+            <div class="dev-col-title">&#10008; НЕ в Git (секреты, сборка, БД)</div>
+            <div class="dev-col-content"><code>.env</code> &mdash; переменные окружения<br><code>*.db</code> &mdash; база данных<br><code>node_modules/</code>, <code>.next/</code></div>
           </div>
         </div>
       </div>
+    </div>
 
 
-      <div class="dev-block auto" id="devBlock10" data-block="10">
-        <div class="dev-block-accent auto"></div>
-        <div class="dev-block-bg auto"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9889;</div>
-            <div><div class="dev-block-num">БЛОК 10 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Создание .env</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(10, this)">Отметить &check;</button>
+    <div class="dev-block auto" id="devBlock10" data-block="10">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 10 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Создание .env</div></div>
         </div>
-        <div class="dev-block-body">
-          <div class="info-box success"><div class="icon">&#10003;</div><p>Полностью автоматический &mdash; создаёт .env на основе параметров</p></div>
-          <div class="dev-code">
-            <div class="dev-code-header"><span class="dev-code-lang">.env</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
-            <div class="dev-code-body">APP_NAME=my-project
+        <button class="dev-block-done-btn" onclick="devToggleDone(10, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box success"><div class="icon">&#10003;</div><p>Полностью автоматический &mdash; создаёт .env на основе параметров</p></div>
+        <div class="dev-code">
+          <div class="dev-code-header"><span class="dev-code-lang">.env</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+          <div class="dev-code-body">APP_NAME=my-project
 PORT=3002
 DATABASE_URL=file:./db/custom.db
 NEXT_PUBLIC_SITE_URL=https://my-project.ru
 SECRET_KEY=a1b2c3d4e5f6...
 ENABLE_SSL=false</div>
-          </div>
-          <div class="info-box warning"><div class="icon">&#9888;</div><p>.env никогда не попадает в Git &mdash; он исключён в .gitignore</p></div>
+        </div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>.env никогда не попадает в Git &mdash; он исключён в .gitignore</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock11" data-block="11">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 11 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Git Init + Remote + Build + PM2 Start</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(11, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="dev-substep">
+          <div class="dev-substep-num">1</div>
+          <div class="dev-substep-content"><div class="dev-substep-title">Создание директорий</div><div class="dev-substep-desc">logs/, public/, tmp/ &mdash; необходимые для работы директории</div></div>
+          <div class="dev-substep-badge">AUTO</div>
+        </div>
+        <div class="dev-substep">
+          <div class="dev-substep-num">2</div>
+          <div class="dev-substep-content"><div class="dev-substep-title">Git init</div><div class="dev-substep-desc">Инициализация локального Git-репозитория в директории проекта</div></div>
+          <div class="dev-substep-badge">AUTO</div>
+        </div>
+        <div class="dev-substep">
+          <div class="dev-substep-num">3</div>
+          <div class="dev-substep-content"><div class="dev-substep-title">npm install --legacy-peer-deps</div><div class="dev-substep-desc">Установка зависимостей с проверкой целостности SWC-бинарника</div></div>
+          <div class="dev-substep-badge">AUTO</div>
+        </div>
+        <div class="dev-substep">
+          <div class="dev-substep-num">4</div>
+          <div class="dev-substep-content"><div class="dev-substep-title">next build</div><div class="dev-substep-desc">Сборка проекта. При OOM &mdash; автоматический retry с лимитом 2ГБ (NODE_OPTIONS=--max-old-space-size=2048)</div></div>
+          <div class="dev-substep-badge">AUTO</div>
+        </div>
+        <div class="dev-substep">
+          <div class="dev-substep-num">5</div>
+          <div class="dev-substep-content"><div class="dev-substep-title">PM2 start ecosystem.config.js</div><div class="dev-substep-desc">Запуск приложения через PM2 с автоматическим перезапуском</div></div>
+          <div class="dev-substep-badge">AUTO</div>
+        </div>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>При Standalone режиме .next/static и public/ копируются автоматически</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block check" id="devBlock12" data-block="12">
+      <div class="dev-block-accent check"></div>
+      <div class="dev-block-bg check"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#128269;</div>
+          <div><div class="dev-block-num">БЛОК 12 &middot;</div><div class="dev-block-type">CHECK</div><div class="dev-block-title">Проверка репозитория и токена</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(12, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Проверка доступа к репозиторию через GitHub API</p></div>
+        <div class="dev-http-cards">
+          <div class="dev-http-card"><div class="dev-http-code c200">200</div><div class="dev-http-desc">Репозиторий существует, доступ есть</div></div>
+          <div class="dev-http-card"><div class="dev-http-code c404">404</div><div class="dev-http-desc">Репозиторий не найден</div></div>
+          <div class="dev-http-card"><div class="dev-http-code c401">401</div><div class="dev-http-desc">Токен неверен или истёк</div></div>
+        </div>
+        <div class="dev-term">
+          <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+          <div class="dev-term-body"><span style="color:#a29bfe">$</span> curl -s -o /dev/null -w "%{http_code}" \<br>  -H "Authorization: token ghp_***" \<br>  https://api.github.com/repos/Mmitekk/be2st.ru<br><span style="color:#00b894">200</span> &mdash; Repository accessible</div>
         </div>
       </div>
+    </div>
 
 
-      <div class="dev-block auto" id="devBlock11" data-block="11">
-        <div class="dev-block-accent auto"></div>
-        <div class="dev-block-bg auto"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9889;</div>
-            <div><div class="dev-block-num">БЛОК 11 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Git Init + Remote + Build + PM2 Start</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(11, this)">Отметить &check;</button>
+    <div class="dev-block auto" id="devBlock13" data-block="13">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 13 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Первый коммит и пуш</div></div>
         </div>
-        <div class="dev-block-body">
-          <div class="dev-substep">
-            <div class="dev-substep-num">1</div>
-            <div class="dev-substep-content"><div class="dev-substep-title">Создание директорий</div><div class="dev-substep-desc">logs/, public/, tmp/ &mdash; необходимые для работы директории</div></div>
-            <div class="dev-substep-badge">AUTO</div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(13, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматический коммит и push в основную ветку</p></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Автор коммита</span><span class="dev-prompt-default">[из профиля GitHub]</span></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Email автора</span><span class="dev-prompt-default">[из профиля GitHub]</span></div>
+        <div class="dev-cols">
+          <div class="dev-col">
+            <div class="dev-col-title">&#10003; Обычный push</div>
+            <div class="dev-col-content"><code>git push -u origin main</code><br>Стандартная отправка при отсутствии конфликтов</div>
           </div>
-          <div class="dev-substep">
-            <div class="dev-substep-num">2</div>
-            <div class="dev-substep-content"><div class="dev-substep-title">Git init</div><div class="dev-substep-desc">Инициализация локального Git-репозитория в директории проекта</div></div>
-            <div class="dev-substep-badge">AUTO</div>
+          <div class="dev-col">
+            <div class="dev-col-title">&#9888; Force push (при конфликтах)</div>
+            <div class="dev-col-content"><code>git push -f origin main</code><br>Перезаписывает историю на remote</div>
           </div>
-          <div class="dev-substep">
-            <div class="dev-substep-num">3</div>
-            <div class="dev-substep-content"><div class="dev-substep-title">npm install --legacy-peer-deps</div><div class="dev-substep-desc">Установка зависимостей с проверкой целостности SWC-бинарника</div></div>
-            <div class="dev-substep-badge">AUTO</div>
-          </div>
-          <div class="dev-substep">
-            <div class="dev-substep-num">4</div>
-            <div class="dev-substep-content"><div class="dev-substep-title">next build</div><div class="dev-substep-desc">Сборка проекта. При OOM &mdash; автоматический retry с лимитом 2ГБ (NODE_OPTIONS=--max-old-space-size=2048)</div></div>
-            <div class="dev-substep-badge">AUTO</div>
-          </div>
-          <div class="dev-substep">
-            <div class="dev-substep-num">5</div>
-            <div class="dev-substep-content"><div class="dev-substep-title">PM2 start ecosystem.config.js</div><div class="dev-substep-desc">Запуск приложения через PM2 с автоматическим перезапуском</div></div>
-            <div class="dev-substep-badge">AUTO</div>
-          </div>
-          <div class="info-box tip"><div class="icon">&#10003;</div><p>При Standalone режиме .next/static и public/ копируются автоматически</p></div>
+        </div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Force push перезаписывает историю на remote. Сервер &mdash; источник истины</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock14" data-block="14">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 14 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Финальные проверки</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(14, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматическая проверка всех компонентов деплоя</p></div>
+        <div class="dev-checklist">
+          <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">PM2 процесс &mdash; запущен</div><div class="dev-check-status ok">OK</div></div>
+          <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">.env &mdash; существует</div><div class="dev-check-status ok">OK</div></div>
+          <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">.gitignore &mdash; существует</div><div class="dev-check-status ok">OK</div></div>
+          <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">Git remote &mdash; настроен</div><div class="dev-check-status ok">OK</div></div>
+          <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">HTTP доступ &mdash; OK</div><div class="dev-check-status ok">OK</div></div>
         </div>
       </div>
+    </div>
 
 
-      <div class="dev-block check" id="devBlock12" data-block="12">
-        <div class="dev-block-accent check"></div>
-        <div class="dev-block-bg check"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#128269;</div>
-            <div><div class="dev-block-num">БЛОК 12 &middot;</div><div class="dev-block-type">CHECK</div><div class="dev-block-title">Проверка репозитория и токена</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(12, this)">Отметить &check;</button>
+    <div class="dev-block auto" id="devBlock15" data-block="15">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 15 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Автодеплой Webhook</div></div>
         </div>
-        <div class="dev-block-body">
-          <div class="info-box info"><div class="icon">&#9432;</div><p>Проверка доступа к репозиторию через GitHub API</p></div>
-          <div class="dev-http-cards">
-            <div class="dev-http-card"><div class="dev-http-code c200">200</div><div class="dev-http-desc">Репозиторий существует, доступ есть</div></div>
-            <div class="dev-http-card"><div class="dev-http-code c404">404</div><div class="dev-http-desc">Репозиторий не найден</div></div>
-            <div class="dev-http-card"><div class="dev-http-code c401">401</div><div class="dev-http-desc">Токен неверен или истёк</div></div>
-          </div>
-          <div class="dev-term">
-            <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
-            <div class="dev-term-body"><span style="color:#a29bfe">$</span> curl -s -o /dev/null -w "%{http_code}" \<br>  -H "Authorization: token ghp_***" \<br>  https://api.github.com/repos/Mmitekk/be2st.ru<br><span style="color:#00b894">200</span> &mdash; Repository accessible</div>
-          </div>
-        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(15, this)">Отметить &check;</button>
       </div>
-
-
-      <div class="dev-block auto" id="devBlock13" data-block="13">
-        <div class="dev-block-accent auto"></div>
-        <div class="dev-block-bg auto"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9889;</div>
-            <div><div class="dev-block-num">БЛОК 13 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Первый коммит и пуш</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(13, this)">Отметить &check;</button>
-        </div>
-        <div class="dev-block-body">
-          <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматический коммит и push в основную ветку</p></div>
-          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Автор коммита</span><span class="dev-prompt-default">[из профиля GitHub]</span></div>
-          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Email автора</span><span class="dev-prompt-default">[из профиля GitHub]</span></div>
-          <div class="dev-cols">
-            <div class="dev-col">
-              <div class="dev-col-title">&#10003; Обычный push</div>
-              <div class="dev-col-content"><code>git push -u origin main</code><br>Стандартная отправка при отсутствии конфликтов</div>
-            </div>
-            <div class="dev-col">
-              <div class="dev-col-title">&#9888; Force push (при конфликтах)</div>
-              <div class="dev-col-content"><code>git push -f origin main</code><br>Перезаписывает историю на remote</div>
-            </div>
-          </div>
-          <div class="info-box warning"><div class="icon">&#9888;</div><p>Force push перезаписывает историю на remote. Сервер &mdash; источник истины</p></div>
-        </div>
-      </div>
-
-
-      <div class="dev-block auto" id="devBlock14" data-block="14">
-        <div class="dev-block-accent auto"></div>
-        <div class="dev-block-bg auto"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9889;</div>
-            <div><div class="dev-block-num">БЛОК 14 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Финальные проверки</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(14, this)">Отметить &check;</button>
-        </div>
-        <div class="dev-block-body">
-          <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматическая проверка всех компонентов деплоя</p></div>
-          <div class="dev-checklist">
-            <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">PM2 процесс &mdash; запущен</div><div class="dev-check-status ok">OK</div></div>
-            <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">.env &mdash; существует</div><div class="dev-check-status ok">OK</div></div>
-            <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">.gitignore &mdash; существует</div><div class="dev-check-status ok">OK</div></div>
-            <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">Git remote &mdash; настроен</div><div class="dev-check-status ok">OK</div></div>
-            <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">HTTP доступ &mdash; OK</div><div class="dev-check-status ok">OK</div></div>
-          </div>
-        </div>
-      </div>
-
-
-      <div class="dev-block auto" id="devBlock15" data-block="15">
-        <div class="dev-block-accent auto"></div>
-        <div class="dev-block-bg auto"></div>
-        <div class="dev-block-header">
-          <div class="dev-block-header-left">
-            <div class="dev-block-icon">&#9889;</div>
-            <div><div class="dev-block-num">БЛОК 15 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Автодеплой Webhook</div></div>
-          </div>
-          <button class="dev-block-done-btn" onclick="devToggleDone(15, this)">Отметить &check;</button>
-        </div>
-        <div class="dev-block-body">
-          <div class="info-box info"><div class="icon">&#9432;</div><p>Pipeline: git push &rarr; GitHub &rarr; Webhook &rarr; deploy.sh &rarr; PM2 restart &rarr; сайт обновлён</p></div>
-          <div class="dev-yesno"><span class="dev-yesno-label">Настроить автодеплой?</span><span class="dev-yesno-option dev-yesno-yes">Y (по умолчанию)</span><span class="dev-yesno-option dev-yesno-no">N</span></div>
-          <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Порт для webhook-сервера</span><span class="dev-prompt-default">[9000]</span></div>
-          <div class="dev-flow-inline">
-            <div class="dev-flow-node purple">git push</div><div class="dev-flow-arrow">&rarr;</div>
-            <div class="dev-flow-node green">GitHub</div><div class="dev-flow-arrow">&rarr;</div>
-            <div class="dev-flow-node green">Webhook</div><div class="dev-flow-arrow">&rarr;</div>
-            <div class="dev-flow-node green">deploy.sh</div><div class="dev-flow-arrow">&rarr;</div>
-            <div class="dev-flow-node green">PM2 restart</div><div class="dev-flow-arrow">&rarr;</div>
-            <div class="dev-flow-node purple">&#10003; Готово</div>
-          </div>
-          <div class="dev-cols">
-            <div class="dev-col">
-              <div class="dev-col-title">&#128196; Автосозданные файлы</div>
-              <div class="dev-col-content"><code>webhook-server.js</code> &mdash; HTTP-сервер<br><code>deploy.sh</code> &mdash; скрипт обновления<br>PM2 процесс: <code>{name}-webhook</code></div>
-            </div>
-            <div class="dev-col">
-              <div class="dev-col-title">&#128274; GitHub Webhook</div>
-              <div class="dev-col-content">Content type: <code>application/json</code><br>Events: <code>push</code> only<br>Регистрация через GitHub API</div>
-            </div>
-          </div>
-          <div class="info-box warning"><div class="icon">&#9888;</div><p>Если webhook не зарегистрировался &mdash; настройте вручную через GitHub Settings &rarr; Webhooks</p></div>
-        </div>
-      </div>
-
-
-      <!-- Final Summary -->
-      <div class="dev-summary">
-        <div class="dev-summary-title">&#127775; Деплой завершён!</div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Pipeline: git push &rarr; GitHub &rarr; Webhook &rarr; deploy.sh &rarr; PM2 restart &rarr; сайт обновлён</p></div>
+        <div class="dev-yesno"><span class="dev-yesno-label">Настроить автодеплой?</span><span class="dev-yesno-option dev-yesno-yes">Y (по умолчанию)</span><span class="dev-yesno-option dev-yesno-no">N</span></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Порт для webhook-сервера</span><span class="dev-prompt-default">[9000]</span></div>
         <div class="dev-flow-inline">
           <div class="dev-flow-node purple">git push</div><div class="dev-flow-arrow">&rarr;</div>
           <div class="dev-flow-node green">GitHub</div><div class="dev-flow-arrow">&rarr;</div>
@@ -1043,42 +890,56 @@ ENABLE_SSL=false</div>
           <div class="dev-flow-node green">PM2 restart</div><div class="dev-flow-arrow">&rarr;</div>
           <div class="dev-flow-node purple">&#10003; Готово</div>
         </div>
-        <table class="dev-commands-table">
-          <thead><tr><th>#</th><th>Действие</th><th>Команда</th></tr></thead>
-          <tbody>
-            <tr><td>1</td><td>Обновить сайт вручную</td><td><code>cd /var/www/my-project && bash deploy.sh</code></td></tr>
-            <tr><td>2</td><td>Перезапустить PM2</td><td><code>pm2 restart my-project</code></td></tr>
-            <tr><td>3</td><td>Перезапустить Nginx</td><td><code>sudo systemctl restart nginx</code></td></tr>
-            <tr><td>4</td><td>Проверить логи</td><td><code>pm2 logs my-project --lines 20</code></td></tr>
-            <tr><td>5</td><td>Автодеплой через git push</td><td><code>git add . && git commit -m "changes" && git push</code></td></tr>
-            <tr><td>6</td><td>Подключение коллеги</td><td><code>git clone ... && npm install && cp .env.example .env && npx prisma migrate dev</code></td></tr>
-          </tbody>
-        </table>
         <div class="dev-cols">
           <div class="dev-col">
-            <div class="dev-col-title">&#10003; В Git (на GitHub)</div>
-            <div class="dev-col-content"><code>src/</code>, <code>prisma/</code>, <code>public/</code><br><code>package.json</code>, <code>next.config.ts</code><br><code>.env.example</code></div>
+            <div class="dev-col-title">&#128196; Автосозданные файлы</div>
+            <div class="dev-col-content"><code>webhook-server.js</code> &mdash; HTTP-сервер<br><code>deploy.sh</code> &mdash; скрипт обновления<br>PM2 процесс: <code>{name}-webhook</code></div>
           </div>
           <div class="dev-col">
-            <div class="dev-col-title">&#128274; Только на VDS (не в Git)</div>
-            <div class="dev-col-content"><code>.env</code> &mdash; секреты и ключи<br><code>*.db</code> &mdash; база данных<br><code>ecosystem.config.js</code>, <code>webhook-server.js</code><br><code>deploy.sh</code>, логи</div>
+            <div class="dev-col-title">&#128274; GitHub Webhook</div>
+            <div class="dev-col-content">Content type: <code>application/json</code><br>Events: <code>push</code> only<br>Регистрация через GitHub API</div>
           </div>
         </div>
-      </div>
-
-      <!-- Navigation -->
-      <div class="dev-nav-btns">
-        <button class="dev-nav-btn" id="devPrevBtn" onclick="devNavigate(-1)">&#8592; Назад</button>
-        <button class="dev-nav-btn" id="devNextBtn" onclick="devNavigate(1)">Далее &#8594;</button>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Если webhook не зарегистрировался &mdash; настройте вручную через GitHub Settings &rarr; Webhooks</p></div>
       </div>
     </div>
+
+
+    <!-- Final Summary -->
+    <div class="dev-summary">
+      <div class="dev-summary-title">&#127775; Деплой завершён!</div>
+      <div class="dev-flow-inline">
+        <div class="dev-flow-node purple">git push</div><div class="dev-flow-arrow">&rarr;</div>
+        <div class="dev-flow-node green">GitHub</div><div class="dev-flow-arrow">&rarr;</div>
+        <div class="dev-flow-node green">Webhook</div><div class="dev-flow-arrow">&rarr;</div>
+        <div class="dev-flow-node green">deploy.sh</div><div class="dev-flow-arrow">&rarr;</div>
+        <div class="dev-flow-node green">PM2 restart</div><div class="dev-flow-arrow">&rarr;</div>
+        <div class="dev-flow-node purple">&#10003; Готово</div>
+      </div>
+      <table class="dev-commands-table">
+        <thead><tr><th>#</th><th>Действие</th><th>Команда</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Обновить сайт вручную</td><td><code>cd /var/www/my-project && bash deploy.sh</code></td></tr>
+          <tr><td>2</td><td>Перезапустить PM2</td><td><code>pm2 restart my-project</code></td></tr>
+          <tr><td>3</td><td>Перезапустить Nginx</td><td><code>sudo systemctl restart nginx</code></td></tr>
+          <tr><td>4</td><td>Проверить логи</td><td><code>pm2 logs my-project --lines 20</code></td></tr>
+          <tr><td>5</td><td>Автодеплой через git push</td><td><code>git add . && git commit -m "changes" && git push</code></td></tr>
+          <tr><td>6</td><td>Подключение коллеги</td><td><code>git clone ... && npm install && cp .env.example .env && npx prisma migrate dev</code></td></tr>
+        </tbody>
+      </table>
+      <div class="dev-cols">
+        <div class="dev-col">
+          <div class="dev-col-title">&#10003; В Git (на GitHub)</div>
+          <div class="dev-col-content"><code>src/</code>, <code>prisma/</code>, <code>public/</code><br><code>package.json</code>, <code>next.config.ts</code><br><code>.env.example</code></div>
+        </div>
+        <div class="dev-col">
+          <div class="dev-col-title">&#128274; Только на VDS (не в Git)</div>
+          <div class="dev-col-content"><code>.env</code> &mdash; секреты и ключи<br><code>*.db</code> &mdash; база данных<br><code>ecosystem.config.js</code>, <code>webhook-server.js</code><br><code>deploy.sh</code>, логи</div>
+        </div>
+      </div>
+    </div>
+
   </div>
-
-  <!-- Reset button -->
-  <button class="dev-reset-btn" onclick="devResetProgress()">&#128260; Сбросить прогресс</button>
-
-  <!-- Mobile sidebar toggle -->
-  <button class="dev-sidebar-toggle" onclick="devToggleSidebar()">&#9776; Навигация</button>
 </div>
 
 <!-- Footer -->
@@ -1105,22 +966,9 @@ window.addEventListener('scroll', function() {
   scrollBtn.classList.toggle('visible', window.scrollY > 400);
 });
 
-// Copy command (Tab 1 - multi-line block)
+// Copy single command
 function copySingleCmd(btn, text) {
   navigator.clipboard.writeText(text).then(function() {
-    btn.classList.add('copied');
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Скопировано';
-    setTimeout(function() {
-      btn.classList.remove('copied');
-      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать';
-    }, 2000);
-  });
-}
-
-// Copy command (Tab 1 - legacy single line)
-function copyCmd(btn) {
-  var code = btn.parentElement.querySelector('code');
-  navigator.clipboard.writeText(code.textContent).then(function() {
     btn.classList.add('copied');
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Скопировано';
     setTimeout(function() {
@@ -1151,21 +999,18 @@ function devUpdateProgress() {
   var count = Object.keys(done).filter(function(k) { return done[k]; }).length;
   document.getElementById('devProgressText').textContent = count + ' / ' + totalBlocks;
   document.getElementById('devProgressFill').style.width = (count / totalBlocks * 100) + '%';
-  
-  // Update sidebar items
-  document.querySelectorAll('.dev-sidebar-item').forEach(function(item) {
-    var num = item.dataset.block;
-    item.classList.remove('done', 'active', 'pending');
-    var icon = item.querySelector('.dev-sidebar-icon');
+
+  // Update step dots
+  document.querySelectorAll('.dev-step-dot').forEach(function(dot) {
+    var num = dot.dataset.block;
+    dot.classList.remove('done', 'active', 'pending');
     if (done[num]) {
-      item.classList.add('done');
-      icon.innerHTML = '&#10003;';
+      dot.classList.add('done');
+      dot.textContent = '✓';
     } else if (parseInt(num) === currentBlock) {
-      item.classList.add('active');
-      icon.innerHTML = '&#9679;';
+      dot.classList.add('active');
     } else {
-      item.classList.add('pending');
-      icon.innerHTML = '&#9675;';
+      dot.classList.add('pending');
     }
   });
 
@@ -1181,10 +1026,6 @@ function devUpdateProgress() {
       btn.textContent = 'Отметить ✓';
     }
   });
-
-  // Update nav buttons
-  document.getElementById('devPrevBtn').disabled = currentBlock <= 1;
-  document.getElementById('devNextBtn').disabled = currentBlock >= totalBlocks;
 }
 
 function devToggleDone(num, btn) {
@@ -1193,7 +1034,6 @@ function devToggleDone(num, btn) {
     delete done[num];
   } else {
     done[num] = true;
-    // Auto-advance to next undone block
     for (var i = num + 1; i <= totalBlocks; i++) {
       if (!done[i]) { currentBlock = i; break; }
     }
@@ -1210,13 +1050,6 @@ function devScrollToBlock(num) {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   devUpdateProgress();
-}
-
-function devNavigate(delta) {
-  var newBlock = currentBlock + delta;
-  if (newBlock >= 1 && newBlock <= totalBlocks) {
-    devScrollToBlock(newBlock);
-  }
 }
 
 function devResetProgress() {
@@ -1248,10 +1081,6 @@ function devCopyCode(btn) {
       btn.innerHTML = '&#128203; Копировать';
     }, 2000);
   });
-}
-
-function devToggleSidebar() {
-  document.getElementById('devSidebar').classList.toggle('open');
 }
 
 // Intersection Observer for auto-updating active block
