@@ -640,6 +640,9 @@ class DeployExecutor:
         # т.к. standalone-режим запускается из .next/standalone/
         # и относительный путь ./db/ будет искаться не там
         if db_file:
+            # Убеждаемся, что путь абсолютный
+            if not os.path.isabs(db_file):
+                db_file = os.path.abspath(os.path.join(site_path, db_file))
             env_lines.extend([
                 "",
                 "# Database (SQLite)",
@@ -647,7 +650,10 @@ class DeployExecutor:
                 f"DB_FILE={db_file}",
             ])
         else:
-            db_abs = os.path.join(site_path, "db", f"{project_name}.db")
+            # Пробуем найти db/custom.db (стандартный путь в шаблонах)
+            db_abs = os.path.join(site_path, "db", "custom.db")
+            if not os.path.exists(db_abs):
+                db_abs = os.path.join(site_path, "db", f"{project_name}.db")
             env_lines.extend([
                 "",
                 "# Database (SQLite)",
@@ -1069,6 +1075,9 @@ class DeployExecutor:
         ]
 
         if db_file:
+            # Убеждаемся, что путь абсолютный
+            if not os.path.isabs(db_file):
+                db_file = os.path.abspath(os.path.join(site_path, db_file))
             env_lines.extend([
                 "",
                 "# Database (SQLite)",
@@ -1076,7 +1085,10 @@ class DeployExecutor:
                 f"DB_FILE={db_file}",
             ])
         else:
-            db_abs = os.path.join(site_path, "db", f"{project_name}.db")
+            # Пробуем найти db/custom.db (стандартный путь в шаблонах)
+            db_abs = os.path.join(site_path, "db", "custom.db")
+            if not os.path.exists(db_abs):
+                db_abs = os.path.join(site_path, "db", f"{project_name}.db")
             env_lines.extend([
                 "",
                 "# Database (SQLite)",
