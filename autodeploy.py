@@ -19,6 +19,7 @@ import glob
 import json
 import os
 import random
+import re
 import socket
 import string
 import shutil
@@ -37,6 +38,327 @@ from rich import box
 from rich.rule import Rule
 
 console = Console()
+
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  ОПРЕДЕЛЕНИЕ ОС                                                          ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+def detect_os_family() -> str:
+    """Определяет семейство ОС: 'debian' или 'rhel'.
+
+    Debian-family: Ubuntu, Debian, Linux Mint, Pop!_OS
+    RHEL-family:   Alma Linux, CentOS, Rocky Linux, RHEL, Fedora, Oracle Linux
+
+    Читает /etc/os-release — стандартный файл, доступный на всех
+    современных дистрибутивах Linux (systemd).
+    """
+    try:
+        with open('/etc/os-release', 'r') as f:
+            content = f.read().lower()
+    except FileNotFoundError:
+        # Fallback: проверяем наличие типичных файлов
+        if os.path.isfile('/etc/redhat-release'):
+            return 'rhel'
+        if os.path.isfile('/etc/debian_version'):
+            return 'debian'
+        return 'unknown'
+
+    # ID_LIKE содержит список «похожих» дистрибутивов
+    # Alma Linux: ID_LIKE="rhel centos fedora"
+    # Ubuntu:     ID_LIKE=debian
+    if 'rhel' in content or 'centos' in content or 'fedora' in content:
+        return 'rhel'
+    if 'debian' in content or 'ubuntu' in content or 'mint' in content:
+        return 'debian'
+
+    # Fallback по ID
+    # Alma: ID="almalinux"
+    # Rocky: ID="rocky"
+    # CentOS: ID="centos"
+    for rhel_id in ['almalinux', 'rocky', 'centos', 'rhel', 'fedora', 'oracle']:
+        if rhel_id in content:
+            return 'rhel'
+
+    return 'unknown'
+
+
+# Глобальное определение ОС — выполняется один раз при старте
+OS_FAMILY = detect_os_family()
+
+
+def is_rhel() -> bool:
+    """True если текущая ОС — RHEL-family (Alma, CentOS, Rocky, Fedora)."""
+    return OS_FAMILY == 'rhel'
+
+
+def is_debian() -> bool:
+    """True если текущая ОС — Debian-family (Ubuntu, Debian)."""
+    return OS_FAMILY == 'debian'
+
+
+def pkg_install(packages: str, timeout: int = 180) -> Tuple[int, str, str]:
+    """Устанавливает пакеты через apt-get (Debian) или dnf (RHEL).
+
+    Args:
+        packages: строка с именами пакетов через пробел
+                  (например: "nginx certbot python3-certbot-nginx")
+    Returns:
+        (returncode, stdout, stderr)
+    """
+    if is_rhel():
+        # RHEL/Alma: dnf с автоматическим подтверждением
+        cmd = f"dnf install -y {packages}"
+    else:
+        # Debian/Ubuntu: apt-get
+        cmd = f"apt-get update -qq && apt-get install -y -qq {packages}"
+    return run_cmd(cmd, timeout=timeout)
+
+
+def get_apache_service_name() -> str:
+    """Возвращает имя службы Apache для systemctl.
+
+    Debian/Ubuntu: apache2
+    RHEL/Alma/CentOS: httpd
+    """
+    return 'httpd' if is_rhel() else 'apache2'
+
+
+def get_apache_sites_dir() -> str:
+    """Возвращает путь к директории sites-available Apache.
+
+    Debian: /etc/apache2/sites-available
+    RHEL:   /etc/httpd/conf.d  (нет sites-available)
+    """
+    return '/etc/httpd/conf.d' if is_rhel() else '/etc/apache2/sites-available'
+
+
+def get_apache_enabled_dir() -> str:
+    """Возвращает путь к директории sites-enabled Apache.
+
+    Debian: /etc/apache2/sites-enabled
+    RHEL:   /etc/httpd/conf.d  (та же, что и sites-available)
+    """
+    return '/etc/httpd/conf.d' if is_rhel() else '/etc/apache2/sites-enabled'
+
+
+def get_nginx_sites_dir() -> str:
+    """Возвращает путь к директории конфигов Nginx.
+
+    Debian: /etc/nginx/sites-available
+    RHEL:   /etc/nginx/conf.d  (нет sites-available)
+    """
+    return '/etc/nginx/conf.d' if is_rhel() else '/etc/nginx/sites-available'
+
+
+def get_nginx_enabled_dir() -> str:
+    """Возвращает путь к директории включённых конфигов Nginx.
+
+    Debian: /etc/nginx/sites-enabled
+    RHEL:   /etc/nginx/conf.d  (та же, что и sites-available)
+    """
+    return '/etc/nginx/conf.d' if is_rhel() else '/etc/nginx/sites-enabled'
+
+
+def get_apache_log_dir() -> str:
+    """Возвращает путь к логам Apache.
+
+    Debian: /var/log/apache2
+    RHEL:   /var/log/httpd
+    """
+    return '/var/log/httpd' if is_rhel() else '/var/log/apache2'
+
+
+def reload_web_server(server_type: str) -> Tuple[int, str, str]:
+    """Перезагружает конфигурацию веб-сервера.
+
+    Args:
+        server_type: 'nginx' или 'apache'
+    """
+    if server_type == 'nginx':
+        return run_cmd('systemctl reload nginx')
+    elif server_type == 'apache':
+        svc = get_apache_service_name()
+        return run_cmd(f'systemctl reload {svc}')
+    return (-2, '', f'Неизвестный сервер: {server_type}')
+
+
+def enable_apache_modules(modules: list) -> bool:
+    """Включает модули Apache.
+
+    Debian: a2enmod module1 module2 ...
+    RHEL:   модули уже включены по умолчанию (conf.d/*.conf),
+            но proxy/proxy_http нужно убедиться что загружены.
+
+    Args:
+        modules: список имён модулей (например: ['proxy', 'proxy_http'])
+    Returns:
+        True если успешно
+    """
+    if is_debian():
+        mods_str = ' '.join(modules)
+        rc, _, _ = run_cmd(f'a2enmod {mods_str} 2>/dev/null')
+        return rc == 0
+    else:
+        # RHEL: модули proxy загружаются автоматически если установлен mod_proxy
+        # Проверяем наличие конфига модуля
+        for mod in modules:
+            conf_path = f'/etc/httpd/conf.modules.d/{mod}.conf'
+            # На RHEL модули обычно включены по умолчанию
+            # Если конфиг отсутствует — устанавливаем пакет
+            if not os.path.exists(conf_path):
+                # Пробуем найти в других местах
+                rc, out, _ = run_cmd(
+                    f"grep -rl 'LoadModule.*mod_{mod}' /etc/httpd/ 2>/dev/null"
+                )
+                if not out.strip():
+                    # Устанавливаем mod_proxy если не установлен
+                    pkg_install('mod_proxy mod_proxy_http')
+        return True
+
+
+def enable_apache_site(config_filename: str) -> bool:
+    """Включает сайт Apache.
+
+    Debian: a2ensite domain.conf
+    RHEL:   файл уже в conf.d/ — ничего делать не нужно
+
+    Args:
+        config_filename: имя файла конфига (например: 'mysite.ru.conf')
+    Returns:
+        True если успешно
+    """
+    if is_debian():
+        rc, _, _ = run_cmd(f'a2ensite {config_filename} 2>/dev/null')
+        return rc == 0
+    else:
+        # На RHEL конфиг в /etc/httpd/conf.d/ подхватывается автоматически
+        return True
+
+
+def check_selinux() -> Tuple[bool, str]:
+    """Проверяет статус SELinux (актуально для RHEL/Alma).
+
+    Returns:
+        (is_enforcing, status_text)
+        is_enforcing: True если SELinux в режиме Enforcing
+    """
+    if not is_rhel():
+        return False, "SELinux не применим (не RHEL-family)"
+
+    rc, out, _ = run_cmd('getenforce 2>/dev/null')
+    status = out.strip().lower()
+
+    if status == 'enforcing':
+        return True, 'SELinux: Enforcing (строгий режим)'
+    elif status == 'permissive':
+        return False, 'SELinux: Permissive (только логирование)'
+    elif status == 'disabled':
+        return False, 'SELinux: Disabled (выключен)'
+    else:
+        return False, f'SELinux: не удалось определить ({out})'
+
+
+def configure_selinux_for_web(site_path: str, app_port: int) -> List[str]:
+    """Настраивает SELinux для работы веб-приложения на RHEL.
+
+    SELinux в режиме Enforcing блокирует:
+    - Обращение Nginx/Apache к нестандартным директориям
+    - Проксирование на нестандартные порты
+    - Запуск скриптов из нестандартных расположений
+
+    Returns:
+        Список выполненных действий
+    """
+    actions = []
+    is_enforcing, _ = check_selinux()
+
+    if not is_enforcing:
+        return actions
+
+    # 1. Разрешаем Nginx/Apache проксировать на порт приложения
+    rc, out, _ = run_cmd(f'semanage port -l | grep -w {app_port} 2>/dev/null')
+    if rc != 0 or str(app_port) not in out:
+        rc, _, err = run_cmd(
+            f'semanage port -a -t http_port_t -p tcp {app_port} 2>/dev/null'
+        )
+        if rc == 0:
+            actions.append(f'SELinux: порт {app_port} добавлен как http_port_t')
+        else:
+            # Возможно порт уже существует с другим типом — пробуем изменить
+            run_cmd(
+                f'semanage port -m -t http_port_t -p tcp {app_port} 2>/dev/null'
+            )
+            actions.append(f'SELinux: порт {app_port} изменён на http_port_t')
+
+    # 2. Разрешаем Nginx/Apache обращаться к директории сайта
+    #    (если она вне стандартных /var/www, /usr/share/nginx)
+    rc, _, _ = run_cmd(
+        f'matchpathcon {site_path} 2>/dev/null | grep -c httpd_sys_content_t'
+    )
+    if rc != 0 or not out.strip() or out.strip() == '0':
+        run_cmd(
+            f'semanage fcontext -a -t httpd_sys_content_t "{site_path}/(/.*)?" 2>/dev/null'
+        )
+        run_cmd(f'restorecon -Rv {site_path} 2>/dev/null')
+        actions.append(f'SELinux: контекст httpd_sys_content_t установлен для {site_path}')
+
+    # 3. Разрешаем Nginx/Apache проксировать (network connect)
+    rc, out, _ = run_cmd('getsebool httpd_can_network_connect 2>/dev/null')
+    if 'off' in out.lower():
+        run_cmd('setsebool -P httpd_can_network_connect on 2>/dev/null')
+        actions.append('SELinux: httpd_can_network_connect = on')
+
+    # 4. Разрешаем Nginx/Apache подключаться к сети
+    rc, out, _ = run_cmd('getsebool httpd_can_network_relay 2>/dev/null')
+    if 'off' in out.lower():
+        run_cmd('setsebool -P httpd_can_network_relay on 2>/dev/null')
+        actions.append('SELinux: httpd_can_network_relay = on')
+
+    return actions
+
+
+def open_firewall_port(port: int, proto: str = 'tcp') -> List[str]:
+    """Открывает порт в файрволе.
+
+    Debian: ufw (если установлен)
+    RHEL:   firewalld (по умолчанию)
+
+    Returns:
+        Список выполненных действий
+    """
+    actions = []
+
+    if is_rhel():
+        # firewalld
+        rc, _, _ = run_cmd('which firewall-cmd')
+        if rc == 0:
+            # Проверяем, не открыт ли уже
+            rc_check, out_check, _ = run_cmd(
+                f'firewall-cmd --query-port={port}/{proto} 2>/dev/null'
+            )
+            if rc_check != 0 or 'no' in out_check.lower():
+                run_cmd(f'firewall-cmd --add-port={port}/{proto} --permanent 2>/dev/null')
+                run_cmd('firewall-cmd --reload 2>/dev/null')
+                actions.append(f'firewalld: порт {port}/{proto} открыт')
+            else:
+                actions.append(f'firewalld: порт {port}/{proto} уже открыт')
+        else:
+            actions.append('firewalld не установлен — порт не открывался')
+    else:
+        # ufw (Ubuntu/Debian)
+        rc, _, _ = run_cmd('which ufw')
+        if rc == 0:
+            rc_status, out_status, _ = run_cmd('ufw status 2>/dev/null')
+            if 'inactive' not in out_status.lower():
+                run_cmd(f'ufw allow {port}/{proto} 2>/dev/null')
+                actions.append(f'ufw: порт {port}/{proto} открыт')
+            else:
+                actions.append('ufw неактивен — порт не открывался')
+        else:
+            actions.append('ufw не установлен — порт не открывался')
+
+    return actions
 
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
@@ -59,7 +381,9 @@ def run_cmd(cmd: str, timeout: int = 30) -> Tuple[int, str, str]:
 def find_free_port(start: int = 3000, end: int = 9999, exclude: set = None) -> int:
     """Находит свободный порт в диапазоне."""
     exclude = exclude or set()
-    _, out, _ = run_cmd("ss -tlnp 2>/dev/null | awk '{print $4}' | grep -oP '\\d+$' | sort -u")
+    # Кроссплатформенная команда: grep -oP (Perl-regex) отсутствует
+    # на минимальных установках RHEL/Alma. Используем awk вместо grep -oP.
+    _, out, _ = run_cmd("ss -tlnp 2>/dev/null | awk 'NR>1{print $4}' | awk -F: '{print $NF}' | sort -u")
     used_ports = set()
     for p in out.split('\n'):
         try:
@@ -147,7 +471,6 @@ def slugify_name(name: str) -> str:
     slug = slug.replace('.', '-')
 
     # Убираем множественные дефисы
-    import re
     slug = re.sub(r'-+', '-', slug)
     slug = slug.strip('-')
 
@@ -362,7 +685,6 @@ class DeployExecutor:
 
         # Очищаем домен: убираем протокол, путь, trailing slash
         # Пользователь может ввести: https://пункт.рф/ или http://site.ru/page
-        import re
         site_domain = re.sub(r'^https?://', '', site_domain)
         site_domain = site_domain.split('/')[0]
         site_domain = site_domain.rstrip(':')
@@ -478,10 +800,16 @@ class DeployExecutor:
             if 'apache' in out.lower() or 'httpd' in out.lower():
                 return "apache"
         # Fallback: наличие директорий
-        if os.path.isdir("/etc/nginx/sites-enabled"):
-            return "nginx"
-        if os.path.isdir("/etc/apache2/sites-enabled"):
-            return "apache"
+        # Проверяем оба варианта — Debian и RHEL пути
+        if os.path.isdir("/etc/nginx/sites-enabled") or os.path.isdir("/etc/nginx/conf.d"):
+            # Убеждаемся что nginx реально установлен
+            rc_nginx, _, _ = run_cmd("which nginx")
+            if rc_nginx == 0:
+                return "nginx"
+        if os.path.isdir("/etc/apache2/sites-enabled") or os.path.isdir("/etc/httpd/conf.d"):
+            rc_apache, _, _ = run_cmd(f"which {get_apache_service_name()}")
+            if rc_apache == 0:
+                return "apache"
         return "unknown"
 
     def _config_has_proxy(self, config_path: str, port: int) -> bool:
@@ -497,10 +825,16 @@ class DeployExecutor:
 
     def _update_nginx_config(self, domain: str, site_path: str, app_port: int) -> BlockResult:
         """Создаёт или обновляет конфиг Nginx."""
-        nginx_sites = "/etc/nginx/sites-available"
-        nginx_enabled = "/etc/nginx/sites-enabled"
+        nginx_sites = get_nginx_sites_dir()
+        nginx_enabled = get_nginx_enabled_dir()
 
-        config_path = os.path.join(nginx_sites, domain)
+        # На RHEL конфиги в conf.d/ должны иметь расширение .conf
+        if is_rhel():
+            config_filename = f"{domain}.conf"
+        else:
+            config_filename = domain
+
+        config_path = os.path.join(nginx_sites, config_filename)
         existing_proxy = False
 
         if os.path.exists(config_path):
@@ -541,14 +875,16 @@ class DeployExecutor:
         try:
             with open(config_path, 'w') as f:
                 f.write(vhost)
-            # Создаём симлинк
-            enabled_link = os.path.join(nginx_enabled, domain)
-            if not os.path.exists(enabled_link):
-                run_cmd(f"ln -sf {config_path} {enabled_link}")
-            # Удаляем default если мешает
-            default_conf = os.path.join(nginx_enabled, "default")
-            if os.path.exists(default_conf):
-                run_cmd(f"mv {default_conf} {default_conf}.bak 2>/dev/null")
+            # На Debian: создаём симлинк sites-enabled → sites-available
+            # На RHEL: conf.d/ уже включён автоматически — симлинк не нужен
+            if is_debian():
+                enabled_link = os.path.join(nginx_enabled, config_filename)
+                if not os.path.exists(enabled_link):
+                    run_cmd(f"ln -sf {config_path} {enabled_link}")
+                # Удаляем default если мешает
+                default_conf = os.path.join(nginx_enabled, "default")
+                if os.path.exists(default_conf):
+                    run_cmd(f"mv {default_conf} {default_conf}.bak 2>/dev/null")
 
             # Для длинных доменов (Punycode) увеличиваем hash_bucket_size
             # Иначе nginx не сможет обработать server_name: "could not build
@@ -581,10 +917,14 @@ class DeployExecutor:
 
     def _update_apache_config(self, domain: str, site_path: str, app_port: int) -> BlockResult:
         """Создаёт или обновляет конфиг Apache."""
-        apache_sites = "/etc/apache2/sites-available"
-        apache_enabled = "/etc/apache2/sites-enabled"
+        apache_sites = get_apache_sites_dir()
+        apache_enabled = get_apache_enabled_dir()
+        apache_svc = get_apache_service_name()
+        apache_log_dir = get_apache_log_dir()
 
-        config_path = os.path.join(apache_sites, f"{domain}.conf")
+        # Имя файла конфига
+        config_filename = f"{domain}.conf"
+        config_path = os.path.join(apache_sites, config_filename)
         existing_proxy = False
 
         if os.path.exists(config_path):
@@ -596,6 +936,14 @@ class DeployExecutor:
                                     f"Прокси на порт {app_port}")
 
         # Создаём / перезаписываем конфиг
+        # На RHEL используем абсолютные пути к логам (нет APACHE_LOG_DIR)
+        if is_rhel():
+            log_error = f"{apache_log_dir}/{domain}_error.log"
+            log_custom = f"{apache_log_dir}/{domain}_access.log combined"
+        else:
+            log_error = "${APACHE_LOG_DIR}/%s_error.log" % domain
+            log_custom = "${APACHE_LOG_DIR}/%s_access.log combined" % domain
+
         vhost = f"""<VirtualHost *:80>
     ServerName {domain}
     ServerAlias www.{domain}
@@ -611,17 +959,19 @@ class DeployExecutor:
         Require all granted
     </Directory>
 
-    ErrorLog ${{APACHE_LOG_DIR}}/{domain}_error.log
-    CustomLog ${{APACHE_LOG_DIR}}/{domain}_access.log combined
+    ErrorLog {log_error}
+    CustomLog {log_custom}
 </VirtualHost>
 """
         try:
             with open(config_path, 'w') as f:
                 f.write(vhost)
-            run_cmd(f"a2ensite {domain}.conf 2>/dev/null")
-            # Включаем proxy-модули
-            run_cmd("a2enmod proxy proxy_http 2>/dev/null")
-            run_cmd("systemctl reload apache2")
+            # Включаем сайт (Debian: a2ensite, RHEL: уже в conf.d)
+            enable_apache_site(config_filename)
+            # Включаем proxy-модули (Debian: a2enmod, RHEL: проверяем/устанавливаем)
+            enable_apache_modules(['proxy', 'proxy_http'])
+            # Перезагружаем конфигурацию Apache (apache2/httpd)
+            reload_web_server('apache')
             action = "Обновлён" if os.path.exists(config_path) else "Создан"
             return self._add_result(6, "web_server", "Конфигурация веб-сервера", True,
                                     f"Apache: {action} конфиг для {domain}",
@@ -636,10 +986,12 @@ class DeployExecutor:
         rc, _, _ = run_cmd("which certbot")
         if rc != 0:
             console.print("  [cyan]Установка certbot...[/cyan]")
-            rc, _, err = run_cmd(
-                "apt-get update -qq && apt-get install -y -qq certbot python3-certbot-nginx",
-                timeout=180
-            )
+            # Кроссплатформенная установка: apt-get (Debian) или dnf (RHEL)
+            if is_rhel():
+                certbot_pkg = "certbot python3-certbot-nginx"
+            else:
+                certbot_pkg = "certbot python3-certbot-nginx"
+            rc, _, err = pkg_install(certbot_pkg, timeout=180)
             if rc != 0:
                 return False, f"certbot не установлен: {err[:150]}"
 
@@ -660,10 +1012,7 @@ class DeployExecutor:
         if rc_check == 0 and out_check.strip() != "0":
             # Сертификат уже есть — просто обновляем конфиг
             console.print("  [cyan]SSL сертификат уже существует, обновляю конфиг...[/cyan]")
-            if port80_server == "nginx":
-                run_cmd("systemctl reload nginx")
-            elif port80_server == "apache":
-                run_cmd("systemctl reload apache2")
+            reload_web_server(port80_server)
             return True, "SSL сертификат уже существует, конфиг обновлён"
 
         # Запускаем certbot
@@ -711,10 +1060,10 @@ class DeployExecutor:
         elif port80_server == "apache":
             result = self._update_apache_config(domain, site_path, app_port)
         else:
-            # Не определили — пробуем оба
-            if os.path.isdir("/etc/nginx/sites-available"):
+            # Не определили — пробуем оба (Debian + RHEL пути)
+            if os.path.isdir(get_nginx_sites_dir()):
                 result = self._update_nginx_config(domain, site_path, app_port)
-            elif os.path.isdir("/etc/apache2/sites-available"):
+            elif os.path.isdir(get_apache_sites_dir()):
                 result = self._update_apache_config(domain, site_path, app_port)
             else:
                 result = self._add_result(6, "web_server", "Конфигурация веб-сервера", False,
@@ -730,6 +1079,24 @@ class DeployExecutor:
                 # SSL не критичен — сайт работает и без него
                 result.details += f"\n⚠ SSL не настроен: {ssl_msg}"
                 console.print(f"  [yellow]⚠ SSL не настроен: {ssl_msg[:100]}[/yellow]")
+
+        # SELinux и файрвол (RHEL/Alma Linux)
+        if result.success and is_rhel():
+            # SELinux
+            selinux_actions = configure_selinux_for_web(site_path, app_port)
+            if selinux_actions:
+                result.details += "\n" + "\n".join(selinux_actions)
+                for action in selinux_actions:
+                    console.print(f"  [cyan]{action}[/cyan]")
+
+            # Файрвол — открываем порты 80, 443 и порт приложения
+            firewall_actions = []
+            for port in [80, 443, app_port]:
+                firewall_actions.extend(open_firewall_port(port))
+            if firewall_actions:
+                result.details += "\n" + "\n".join(firewall_actions)
+                for action in firewall_actions:
+                    console.print(f"  [cyan]{action}[/cyan]")
 
         return result
 
@@ -1520,13 +1887,13 @@ class DeployExecutor:
         # Переиспользуем секрет и порт если они были
         if existing_secret:
             secret = existing_secret
-            self.log(f"Переиспользуем существующий webhook secret")
+            console.print(f"  [dim]Переиспользуем существующий webhook secret[/dim]")
         else:
             secret = generate_password(24)
         if existing_webhook_port and existing_webhook_port not in self.used_ports:
             webhook_port = existing_webhook_port
             self.used_ports.add(webhook_port)
-            self.log(f"Переиспользуем существующий webhook порт: {webhook_port}")
+            console.print(f"  [dim]Переиспользуем существующий webhook порт: {webhook_port}[/dim]")
 
         # Сохраняем секрет и порт в .env.webhook
         try:
@@ -1820,7 +2187,7 @@ process.on('unhandledRejection', (e) => {{
                         f"https://api.github.com/repos/{repo_name}/hooks/{dup_id}",
                         timeout=5
                     )
-                    self.log(f"Удалён устаревший webhook #{dup_id}")
+                    console.print(f"  [dim]Удалён устаревший webhook #{dup_id}[/dim]")
 
                 if hook_exists:
                     webhook_details += f"\nWebhook URL: {webhook_url}"
@@ -2029,9 +2396,17 @@ BLOCK_INFO = [
 
 def print_banner():
     console.print()
+    # Показываем определённую ОС
+    os_display = {
+        'debian': '[green]Debian/Ubuntu[/green]',
+        'rhel': '[green]RHEL/Alma Linux[/green]',
+        'unknown': '[yellow]Неизвестная ОС[/yellow]'
+    }.get(OS_FAMILY, '[yellow]Неизвестная ОС[/yellow]')
+
     console.print(Panel.fit(
         "[bold green]AutoDeploy[/bold green] — Автоматический деплой сайтов\n"
-        "[dim]15 блоков. Большинство выполняются автоматически.[/dim]",
+        f"[dim]15 блоков. Большинство выполняются автоматически.\n"
+        f"Обнаружена ОС: {os_display}[/dim]",
         border_style="green"
     ))
     console.print()
