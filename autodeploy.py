@@ -125,6 +125,35 @@ def domain_to_punycode(domain: str) -> str:
         return domain
 
 
+def slugify_name(name: str) -> str:
+    """Конвертирует имя проекта в безопасный ASCII-слаг для PM2.
+
+    PM2 использует имя процесса для внутренних файлов в ~/.pm2/,
+    поэтому кириллица и спецсимволы могут ломать работу.
+    Конвертируем в Punycode, убираем точки и лишние дефисы.
+
+    Примеры:
+        пункт-службы-по-контракту.рф → xn------8cdc3a0afbdtikcehwhrmdcgo1q-xn--p1ai
+        be10st.ru → be10st-ru
+        my-site → my-site
+    """
+    # Сначала конвертируем кириллицу в Punycode
+    try:
+        slug = name.encode('idna').decode('ascii')
+    except (UnicodeError, UnicodeDecodeError):
+        slug = name
+
+    # Заменяем точки на дефисы (PM2 не любит точки в именах)
+    slug = slug.replace('.', '-')
+
+    # Убираем множественные дефисы
+    import re
+    slug = re.sub(r'-+', '-', slug)
+    slug = slug.strip('-')
+
+    return slug or 'app'
+
+
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║  РЕЗУЛЬТАТ БЛОКА                                                         ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
@@ -180,13 +209,37 @@ class DeployExecutor:
         punycode_domain = domain_to_punycode(raw_domain)
         is_idn = raw_domain != punycode_domain  # True если домен кириллический
 
+        # ВАЖНО: Для кириллических доменов site_path ДОЛЖЕН быть в Punycode!
+        # Кириллица в путях ломает PM2, npm и другие инструменты.
+        # Пример: /var/www/пункт.рф → /var/www/xn----abc.xn--p1ai
+        if is_idn:
+            # Заменяем кириллический домен в пути на Punycode
+            # site_path = /some/path/кириллица.рф → /some/path/xn----abc.xn--p1ai
+            site_path_punycode = site_path.rstrip('/')[:-len(raw_domain)] + punycode_domain
+
+            # Проверяем, какая директория существует на диске
+            # (пользователь мог создать punycode-директорию вручную)
+            if os.path.exists(site_path_punycode) and not os.path.exists(site_path):
+                site_path = site_path_punycode
+            elif not os.path.exists(site_path) and not os.path.exists(site_path_punycode):
+                # Ни одной не существует — создаём punycode-путь (ASCII-безопасный)
+                site_path = site_path_punycode
+            # Если кириллический путь существует — используем его
+            # (но предупреждаем, что могут быть проблемы)
+        else:
+            site_path_punycode = site_path
+
+        # PM2-имя: безопасный ASCII-слаг (кириллица ломает PM2)
+        pm2_name = slugify_name(project_name)
+
         if os.path.exists(site_path):
             self.ctx["site_path"] = site_path
             self.ctx["project_name"] = project_name
+            self.ctx["pm2_name"] = pm2_name
             self.ctx["domain"] = punycode_domain
             self.ctx["domain_display"] = raw_domain  # Оригинал для отображения
             self.ctx["domain_is_idn"] = is_idn
-            details = f"Путь: {site_path}\nДомен: {raw_domain}"
+            details = f"Путь: {site_path}\nДомен: {raw_domain}\nPM2 имя: {pm2_name}"
             if is_idn:
                 details += f"\nДомен (Punycode): {punycode_domain}"
             return self._add_result(1, "project", "Название проекта и путь", True,
@@ -196,10 +249,11 @@ class DeployExecutor:
                 os.makedirs(site_path, exist_ok=True)
                 self.ctx["site_path"] = site_path
                 self.ctx["project_name"] = project_name
+                self.ctx["pm2_name"] = pm2_name
                 self.ctx["domain"] = punycode_domain
                 self.ctx["domain_display"] = raw_domain
                 self.ctx["domain_is_idn"] = is_idn
-                details = f"Путь: {site_path}\nДомен: {raw_domain}"
+                details = f"Путь: {site_path}\nДомен: {raw_domain}\nPM2 имя: {pm2_name}"
                 if is_idn:
                     details += f"\nДомен (Punycode): {punycode_domain}"
                 return self._add_result(1, "project", "Название проекта и путь", True,
@@ -282,11 +336,18 @@ class DeployExecutor:
     # ── Блок 4: Домен и SSL ─────────────────────────────────────────────
 
     def execute_block4(self) -> BlockResult:
-        site_domain = self.ctx.get("site_domain", "")
+        site_domain = self.ctx.get("site_domain", "").strip()
         use_ssl = self.ctx.get("use_ssl", "no")
 
         if not site_domain:
             site_domain = self.ctx.get("domain", "")
+
+        # Очищаем домен: убираем протокол, путь, trailing slash
+        # Пользователь может ввести: https://пункт.рф/ или http://site.ru/page
+        import re
+        site_domain = re.sub(r'^https?://', '', site_domain)
+        site_domain = site_domain.split('/')[0]
+        site_domain = site_domain.rstrip(':')
 
         # Конвертируем в Punycode для системных конфигов (Nginx, DNS)
         # Оригинал сохраняем для отображения и URL
@@ -314,6 +375,7 @@ class DeployExecutor:
 
     def execute_block5(self) -> BlockResult:
         project_name = self.ctx.get("project_name", "app")
+        pm2_name = self.ctx.get("pm2_name", slugify_name(project_name))
         site_path = self.ctx.get("site_path", ".")
         app_port = self.ctx.get("app_port", 3000)
         use_standalone = self.ctx.get("use_standalone", "no")
@@ -330,8 +392,15 @@ class DeployExecutor:
             pm2_args = ".next/standalone/server.js"
             mode_label = "Standalone"
         else:
-            pm2_script = "npm"
-            pm2_args = "start"
+            # ВАЖНО: Используем 'npx next start -p PORT' вместо 'npm start'!
+            # Шаблоны Next.js часто хардкодят порт в package.json:
+            #   "start": "next start -p 3000"
+            # Флаг -p ПРИОРИТЕТНЕЕ env-переменной PORT, поэтому при
+            # запуске через 'npm start' приложение стартует на порту 3000,
+            # а не на назначенном скриптом порту. npx next start -p PORT
+            # гарантирует, что приложение слушает правильный порт.
+            pm2_script = "npx"
+            pm2_args = f"next start -p {app_port}"
             mode_label = "Standard"
 
         # Сохраняем параметры запуска для Block 11
@@ -341,7 +410,7 @@ class DeployExecutor:
 
         ecosystem_content = f"""module.exports = {{
   apps: [{{
-    name: '{project_name}',
+    name: '{pm2_name}',
     script: '{pm2_script}',
     args: '{pm2_args}',
     cwd: '{site_path}',
@@ -462,7 +531,28 @@ class DeployExecutor:
             default_conf = os.path.join(nginx_enabled, "default")
             if os.path.exists(default_conf):
                 run_cmd(f"mv {default_conf} {default_conf}.bak 2>/dev/null")
-            run_cmd("systemctl reload nginx")
+
+            # Для длинных доменов (Punycode) увеличиваем hash_bucket_size
+            # Иначе nginx не сможет обработать server_name: "could not build
+            # server_names_hash, you should increase server_names_hash_bucket_size"
+            nginx_main_conf = "/etc/nginx/nginx.conf"
+            rc_grep, grep_out, _ = run_cmd(
+                f"grep -c 'server_names_hash_bucket_size' {nginx_main_conf}"
+            )
+            if rc_grep != 0 or not grep_out.strip() or grep_out.strip() == "0":
+                # Добавляем в блок http { ... }
+                run_cmd(
+                    f"sed -i '/http {{/a \\\\tserver_names_hash_bucket_size 128;' {nginx_main_conf}"
+                )
+
+            # Проверяем конфиг перед reload — не ломаем все сайты
+            rc_test, _, test_err = run_cmd("nginx -t 2>&1")
+            if rc_test == 0:
+                run_cmd("systemctl reload nginx")
+            else:
+                return self._add_result(6, "web_server", "Конфигурация веб-сервера", False,
+                                        f"Nginx конфиг ошибочен: {test_err[:200]}")
+
             action = "Обновлён" if os.path.exists(config_path) else "Создан"
             return self._add_result(6, "web_server", "Конфигурация веб-сервера", True,
                                     f"Nginx: {action} конфиг для {domain}",
@@ -522,6 +612,68 @@ class DeployExecutor:
             return self._add_result(6, "web_server", "Конфигурация веб-сервера", False,
                                     f"Ошибка Apache: {e}")
 
+    def _setup_ssl_certbot(self, domain: str, port80_server: str) -> Tuple[bool, str]:
+        """Настраивает SSL через certbot. Возвращает (success, message)."""
+        # Проверяем, установлен ли certbot
+        rc, _, _ = run_cmd("which certbot")
+        if rc != 0:
+            console.print("  [cyan]Установка certbot...[/cyan]")
+            rc, _, err = run_cmd(
+                "apt-get update -qq && apt-get install -y -qq certbot python3-certbot-nginx",
+                timeout=180
+            )
+            if rc != 0:
+                return False, f"certbot не установлен: {err[:150]}"
+
+        # Выбираем плагин certbot в зависимости от веб-сервера
+        if port80_server == "nginx":
+            plugin = "--nginx"
+        elif port80_server == "apache":
+            plugin = "--apache"
+        else:
+            # Для неизвестного сервера пробуем standalone режим
+            # (нужно временно остановить веб-сервер)
+            plugin = "standalone --pre-hook 'systemctl stop nginx' --post-hook 'systemctl start nginx'"
+
+        # Проверяем, есть ли уже сертификат
+        rc_check, out_check, _ = run_cmd(
+            f"certbot certificates -d {domain} 2>/dev/null | grep -c 'Certificate Name'"
+        )
+        if rc_check == 0 and out_check.strip() != "0":
+            # Сертификат уже есть — просто обновляем конфиг
+            console.print("  [cyan]SSL сертификат уже существует, обновляю конфиг...[/cyan]")
+            if port80_server == "nginx":
+                run_cmd("systemctl reload nginx")
+            elif port80_server == "apache":
+                run_cmd("systemctl reload apache2")
+            return True, "SSL сертификат уже существует, конфиг обновлён"
+
+        # Запускаем certbot
+        console.print(f"  [cyan]Получаю SSL сертификат для {domain}...[/cyan]")
+        rc, out, err = run_cmd(
+            f"certbot {plugin} -d {domain} -d www.{domain} "
+            f"--non-interactive --agree-tos "
+            f"--register-unsafely-without-email --redirect "
+            f"--keep-until-expiring",
+            timeout=120
+        )
+
+        if rc == 0:
+            # Настраиваем автоматическое обновление
+            # certbot renew запускается через systemd timer или cron
+            run_cmd("systemctl enable certbot.timer 2>/dev/null || true")
+            run_cmd("systemctl start certbot.timer 2>/dev/null || true")
+            return True, "SSL сертификат получен, HTTPS настроен с редиректом"
+        else:
+            err_text = (err or out or "")[-300:]
+            # DNS может ещё не резолвиться — это нормально при первом деплое
+            hint = (
+                f"certbot вернул ошибку. Возможная причина: DNS ещё не резолвится. "
+                f"Выполните вручную позже:\n"
+                f"  certbot {plugin} -d {domain} -d www.{domain}"
+            )
+            return False, f"{err_text}\n{hint}"
+
     def execute_block6(self) -> BlockResult:
         domain = self.ctx.get("domain", "")
         site_path = self.ctx.get("site_path", ".")
@@ -549,6 +701,17 @@ class DeployExecutor:
             else:
                 result = self._add_result(6, "web_server", "Конфигурация веб-сервера", False,
                                           "Ни Apache, ни Nginx не найдены")
+
+        # SSL через certbot (после создания HTTP-конфига)
+        if self.ctx.get("use_ssl", False) and result.success:
+            ssl_ok, ssl_msg = self._setup_ssl_certbot(domain, port80_server)
+            if ssl_ok:
+                result.message += " + SSL"
+                result.details += f"\n{ssl_msg}"
+            else:
+                # SSL не критичен — сайт работает и без него
+                result.details += f"\n⚠ SSL не настроен: {ssl_msg}"
+                console.print(f"  [yellow]⚠ SSL не настроен: {ssl_msg[:100]}[/yellow]")
 
         return result
 
@@ -764,6 +927,7 @@ class DeployExecutor:
     def execute_block11(self) -> BlockResult:
         site_path = self.ctx.get("site_path", ".")
         project_name = self.ctx.get("project_name", "app")
+        pm2_name = self.ctx.get("pm2_name", slugify_name(project_name))
         use_standalone = self.ctx.get("use_standalone", "no")
         steps = []
         has_error = False
@@ -781,6 +945,12 @@ class DeployExecutor:
             steps.append("Git init" + ("" if rc == 0 else f": {err[:80]}"))
         else:
             steps.append("Git уже инициализирован")
+
+        # Определяем текущую git-ветку и сохраняем в контекст
+        rc_br, out_br, _ = run_cmd(f"cd {site_path} && git branch --show-current 2>/dev/null")
+        current_branch = out_br.strip() if rc_br == 0 and out_br.strip() else "main"
+        self.ctx["git_branch"] = current_branch
+        steps.append(f"Git ветка: {current_branch}")
 
         # 3. npm install (С dev-зависимостями — нужно для next build)
         pkg = os.path.join(site_path, "package.json")
@@ -894,13 +1064,18 @@ class DeployExecutor:
                 else:
                     steps.append("standalone server.js — НЕ НАЙДЕН, переключаюсь на Standard")
                     self.ctx["use_standalone"] = "no"
-                    # Пересоздаём ecosystem.config.js для Standard режима
+                    self.ctx["pm2_mode_label"] = "Standard"
+                    self.ctx["pm2_script"] = "npx"
                     app_port = self.ctx.get("app_port", 3000)
+                    self.ctx["pm2_args"] = f"next start -p {app_port}"
+                    # Пересоздаём ecosystem.config.js для Standard режима
+                    # Используем npx next start -p PORT вместо npm start,
+                    # т.к. npm start может хардкодить порт в package.json
                     eco_content = f"""module.exports = {{
   apps: [{{
-    name: '{project_name}',
-    script: 'npm',
-    args: 'start',
+    name: '{pm2_name}',
+    script: 'npx',
+    args: 'next start -p {app_port}',
     cwd: '{site_path}',
     env: {{
       PORT: {app_port},
@@ -921,11 +1096,12 @@ class DeployExecutor:
                     eco_path = os.path.join(site_path, "ecosystem.config.js")
                     with open(eco_path, 'w') as f:
                         f.write(eco_content)
+                    steps.append("ecosystem.config.js пересоздан для Standard")
 
         # 5. Запуск PM2 (после сборки!)
         if not has_error:
             # Удаляем старый процесс если есть
-            run_cmd(f"pm2 delete {project_name} 2>/dev/null")
+            run_cmd(f"pm2 delete {pm2_name} 2>/dev/null")
 
             rc, out, err = run_cmd(f"cd {site_path} && pm2 start ecosystem.config.js")
             if rc == 0:
@@ -1000,6 +1176,7 @@ class DeployExecutor:
         project_name = self.ctx.get("project_name", "app")
         repo_name = self.ctx.get("repo_name", "")
         github_token = self.ctx.get("github_token", "")
+        git_branch = self.ctx.get("git_branch", "main")
 
         # Убеждаемся, что .env НЕ отслеживается git
         # (git rm --cached удаляет из индекса, но оставляет файл на диске)
@@ -1033,31 +1210,30 @@ class DeployExecutor:
                 f"https://{github_token}@github.com/{repo_name}.git"
             )
 
-            # Убежимся, что локальная ветка называется 'main'
-            # (git init создаёт master, а remote обычно использует main)
+            # Убежимся, что локальная ветка совпадает с git_branch
             rc_branch, out_branch, _ = run_cmd(
                 f"cd {site_path} && git branch --show-current"
             )
-            current_branch = out_branch.strip() or "master"
-            if current_branch != "main":
-                run_cmd(f"cd {site_path} && git branch -m {current_branch} main")
+            current_branch = out_branch.strip() or git_branch
+            if current_branch != git_branch:
+                run_cmd(f"cd {site_path} && git branch -m {current_branch} {git_branch}")
 
             # Подтягиваем изменения с remote (если remote не пустой)
             # ВАЖНО: при rebase стратегия -X theirs означает
             # «предпочесть НАШИ локальные изменения» (т.к. при rebase
             # ours = upstream/remote, theirs = локальные коммиты)
             run_cmd(
-                f"cd {site_path} && git pull origin main "
+                f"cd {site_path} && git pull origin {git_branch} "
                 f"--rebase --allow-unrelated-histories -X theirs 2>&1"
             )
-            # Ошибки pull не критичны (remote может быть пустым или без ветки main)
+            # Ошибки pull не критичны (remote может быть пустым или без ветки)
 
             # Восстанавливаем .env после pull — git мог затереть наш файл
             self._regenerate_env_after_pull(site_path)
 
             # Пробуем обычный push
             rc, out, err = run_cmd(
-                f"cd {site_path} && git push -u origin main 2>&1"
+                f"cd {site_path} && git push -u origin {git_branch} 2>&1"
             )
             if rc != 0 and "Everything up-to-date" not in out:
                 # Если push отклонён (non-fast-forward) — force push
@@ -1068,7 +1244,7 @@ class DeployExecutor:
                         "выполняю force push (сервер — источник истины)...[/yellow]"
                     )
                     rc, out, err = run_cmd(
-                        f"cd {site_path} && git push -u origin main --force 2>&1"
+                        f"cd {site_path} && git push -u origin {git_branch} --force 2>&1"
                     )
                     if rc != 0:
                         return self._add_result(
@@ -1108,6 +1284,19 @@ class DeployExecutor:
         site_domain = self.ctx.get("site_domain", "")
         use_ssl = self.ctx.get("use_ssl", False)
         project_name = self.ctx.get("project_name", "app")
+
+        # Сначала читаем существующий .env — нужно сохранить SECRET_KEY
+        existing_env = {}
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            k, v = line.split('=', 1)
+                            existing_env[k.strip()] = v.strip()
+            except Exception:
+                pass
 
         env_lines = [
             "# Application",
@@ -1157,27 +1346,20 @@ class DeployExecutor:
                 f"NEXT_PUBLIC_SITE_URL=http://localhost:{app_port}",
             ])
 
+        # Сохраняем существующий SECRET_KEY чтобы не инвалидировать сессии
+        existing_secret = existing_env.get("SECRET_KEY", "")
+
         env_lines.extend([
             "",
             "# Security",
-            f"SECRET_KEY={generate_password(32)}",
+            f"SECRET_KEY={existing_secret or generate_password(32)}",
             "",
             "# SSL",
             f"ENABLE_SSL={'true' if use_ssl else 'false'}",
         ])
 
         # Сохраняем пользовательские переменные из текущего .env
-        existing_env = {}
-        if os.path.exists(env_path):
-            try:
-                with open(env_path, 'r') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith('#') and '=' in line:
-                            k, v = line.split('=', 1)
-                            existing_env[k.strip()] = v.strip()
-            except Exception:
-                pass
+        # (existing_env уже прочитан выше)
 
         known_keys = set()
         for line in env_lines:
@@ -1213,9 +1395,10 @@ class DeployExecutor:
         checks = []
         all_ok = True
         project_name = self.ctx.get("project_name", "app")
+        pm2_name = self.ctx.get("pm2_name", slugify_name(project_name))
         site_path = self.ctx.get("site_path", ".")
 
-        rc, _, _ = run_cmd(f"pm2 describe {project_name} 2>/dev/null")
+        rc, _, _ = run_cmd(f"pm2 describe {pm2_name} 2>/dev/null")
         if rc == 0:
             checks.append("PM2 процесс — запущен")
         else:
@@ -1255,7 +1438,7 @@ class DeployExecutor:
         if domain:
             rc, out, _ = run_cmd(
                 f"curl -s -o /dev/null -w '%{{http_code}}' "
-                f"-H 'Host: {domain}' http://localhost:80 --max-time 5"
+                f"-H 'Host: {domain}' http://127.0.0.1:80 --max-time 5"
             )
             status = out.strip().replace("'", "")
             if status in ("200", "301", "302", "304"):
@@ -1272,7 +1455,7 @@ class DeployExecutor:
         if app_port:
             rc, out, _ = run_cmd(
                 f"curl -s -o /dev/null -w '%{{http_code}}' "
-                f"http://localhost:{app_port}/ --max-time 3"
+                f"http://127.0.0.1:{app_port}/ --max-time 3"
             )
             direct_status = out.strip().replace("'", "")
             if direct_status in ("200", "301", "302", "304"):
@@ -1290,25 +1473,88 @@ class DeployExecutor:
     def execute_block15(self) -> BlockResult:
         site_path = self.ctx.get("site_path", ".")
         project_name = self.ctx.get("project_name", "app")
+        pm2_name = self.ctx.get("pm2_name", slugify_name(project_name))
         repo_name = self.ctx.get("repo_name", "")
         github_token = self.ctx.get("github_token", "")
 
         webhook_port = find_free_port(9000, 49000, self.used_ports)
         self.used_ports.add(webhook_port)
 
-        secret = generate_password(24)
+        # Проверяем, есть ли уже секрет от предыдущего деплоя
+        webhook_env_path = os.path.join(site_path, ".env.webhook")
+        existing_secret = ""
+        existing_webhook_port = None
+        if os.path.exists(webhook_env_path):
+            try:
+                with open(webhook_env_path, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith("WEBHOOK_SECRET="):
+                            existing_secret = line.split("=", 1)[1].strip()
+                        elif line.startswith("WEBHOOK_PORT="):
+                            try:
+                                existing_webhook_port = int(line.split("=", 1)[1].strip())
+                            except ValueError:
+                                pass
+            except Exception:
+                pass
+
+        # Переиспользуем секрет и порт если они были
+        if existing_secret:
+            secret = existing_secret
+            self.log(f"Переиспользуем существующий webhook secret")
+        else:
+            secret = generate_password(24)
+        if existing_webhook_port and existing_webhook_port not in self.used_ports:
+            webhook_port = existing_webhook_port
+            self.used_ports.add(webhook_port)
+            self.log(f"Переиспользуем существующий webhook порт: {webhook_port}")
+
+        # Сохраняем секрет и порт в .env.webhook
+        try:
+            with open(webhook_env_path, 'w') as f:
+                f.write(f"WEBHOOK_SECRET={secret}\n")
+                f.write(f"WEBHOOK_PORT={webhook_port}\n")
+                f.write(f"WEBHOOK_PM2_NAME={pm2_name}-webhook\n")
+        except Exception:
+            pass
+
+        git_branch = self.ctx.get("git_branch", "main")
+        run_mode = self.ctx.get("run_mode", "standalone")
+        site_port = self.ctx.get("app_port", "3000")
 
         webhook_script = f"""#!/usr/bin/env node
 const http = require('http');
+const crypto = require('crypto');
 const {{ exec }} = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
 const PORT = {webhook_port};
 const SECRET = '{secret}';
-const PROJECT = '{project_name}';
+const PROJECT = '{pm2_name}';
 const SITE_PATH = '{site_path}';
+const GIT_BRANCH = '{git_branch}';
+const RUN_MODE = '{run_mode}';
+const SITE_PORT = '{site_port}';
 const ENV_FILE = path.join(SITE_PATH, '.env');
+
+// Проверяем подпись GitHub (HMAC-SHA256)
+function verifySignature(body, signature) {{
+  if (!signature) {{
+    console.warn('[webhook] No signature header — request rejected');
+    return false;
+  }}
+  const expected = 'sha256=' + crypto.createHmac('sha256', SECRET)
+    .update(body).digest('hex');
+  try {{
+    const a = Buffer.from(signature);
+    const b = Buffer.from(expected);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  }} catch (e) {{
+    return false;
+  }}
+}}
 
 // Сохраняем .env перед git pull чтобы не потерять настройки
 function backupEnv() {{
@@ -1335,67 +1581,119 @@ function restoreEnv(originalContent) {{
   }}
 }}
 
-// Копируем .env в standalone-директорию
-function copyEnvToStandalone() {{
+// Копируем .env и static в standalone-директорию
+function copyToStandalone() {{
   try {{
     const standaloneDir = path.join(SITE_PATH, '.next', 'standalone');
-    const dstEnv = path.join(standaloneDir, '.env');
-    if (fs.existsSync(standaloneDir) && fs.existsSync(ENV_FILE)) {{
-      fs.copyFileSync(ENV_FILE, dstEnv);
+    if (!fs.existsSync(standaloneDir)) {{
+      console.log('[webhook] No standalone dir, skipping copy');
+      return;
+    }}
+    // Копируем .env
+    if (fs.existsSync(ENV_FILE)) {{
+      fs.copyFileSync(ENV_FILE, path.join(standaloneDir, '.env'));
       console.log('[webhook] .env copied to .next/standalone/');
     }}
-  }} catch (e) {{}}
+    // Копируем static файлы (CSS, JS, шрифты)
+    const staticSrc = path.join(SITE_PATH, '.next', 'static');
+    const staticDst = path.join(standaloneDir, '.next', 'static');
+    if (fs.existsSync(staticSrc) && !fs.existsSync(staticDst)) {{
+      fs.cpSync(staticSrc, staticDst, {{ recursive: true }});
+      console.log('[webhook] .next/static copied to standalone');
+    }}
+    // Копируем public
+    const publicSrc = path.join(SITE_PATH, 'public');
+    const publicDst = path.join(standaloneDir, 'public');
+    if (fs.existsSync(publicSrc) && !fs.existsSync(publicDst)) {{
+      fs.cpSync(publicSrc, publicDst, {{ recursive: true }});
+      console.log('[webhook] public copied to standalone');
+    }}
+  }} catch (e) {{
+    console.error('[webhook] Failed to copy to standalone:', e.message);
+  }}
+}}
+
+// Безопасное выполнение команды с логированием
+function runCmd(cmd, label, callback) {{
+  console.log(`[webhook] Running: ${{label}}`);
+  exec(cmd, {{ maxBuffer: 10 * 1024 * 1024 }}, (err, stdout, stderr) => {{
+    if (err) {{
+      console.error(`[webhook] ${{label}} ERROR:`, err.message);
+      if (stderr) console.error(`[webhook] ${{label}} stderr:`, stderr.slice(0, 500));
+    }} else {{
+      console.log(`[webhook] ${{label}} OK`);
+      if (stdout && stdout.length < 500) console.log(`[webhook] ${{label}} output:`, stdout.trim());
+    }}
+    callback(err);
+  }});
 }}
 
 const server = http.createServer((req, res) => {{
   if (req.method === 'POST' && req.url === '/webhook') {{
     let body = '';
+    req.on('error', (e) => {{
+      console.error('[webhook] Request error:', e.message);
+    }});
     req.on('data', chunk => {{ body += chunk; }});
     req.on('end', () => {{
       try {{
+        // Проверяем подпись GitHub
+        const signature = req.headers['x-hub-signature-256'];
+        if (!verifySignature(body, signature)) {{
+          res.writeHead(403, {{'Content-Type': 'application/json'}});
+          res.end(JSON.stringify({{ status: 'error', message: 'Invalid signature' }}));
+          return;
+        }}
+
         const payload = JSON.parse(body);
-        console.log(`[${{new Date().toISOString()}}] Webhook received for ${{payload.repository?.name || 'unknown'}}`);
+        const ref = payload.ref || '';
+        const branch = ref.replace('refs/heads/', '');
+        console.log(`[${{new Date().toISOString()}}] Webhook received for ${{payload.repository?.name || 'unknown'}} branch=${{branch}}`);
+
+        // Игнорируем push в другие ветки
+        if (branch && branch !== GIT_BRANCH) {{
+          console.log(`[webhook] Ignoring push to ${{branch}} (watching ${{GIT_BRANCH}})`);
+          res.writeHead(200, {{'Content-Type': 'application/json'}});
+          res.end(JSON.stringify({{ status: 'ignored', message: `Branch ${{branch}} not watched` }}));
+          return;
+        }}
 
         // 1. Бэкапим .env
         const envBackup = backupEnv();
 
         // 2. git pull
-        exec(`cd ${{SITE_PATH}} && git pull origin main 2>&1`, (pullErr, pullOut, pullErr2) => {{
-          if (pullErr) {{
-            console.error('git pull error:', pullErr.message);
-            // Всё равно пробуем продолжить
-          }} else {{
-            console.log('git pull OK');
-          }}
-
+        runCmd(`cd ${{SITE_PATH}} && git pull origin ${{GIT_BRANCH}} 2>&1`, 'git pull', (pullErr) => {{
           // 3. Восстанавливаем .env если git его перезаписал
           restoreEnv(envBackup);
 
+          if (pullErr) {{
+            console.error('[webhook] Aborting: git pull failed');
+            return;
+          }}
+
           // 4. npm install
-          exec(`cd ${{SITE_PATH}} && npm install --legacy-peer-deps 2>&1`, (npmErr, npmOut, npmErr2) => {{
+          runCmd(`cd ${{SITE_PATH}} && npm install --legacy-peer-deps 2>&1`, 'npm install', (npmErr) => {{
             if (npmErr) {{
-              console.error('npm install error:', npmErr.message);
-            }} else {{
-              console.log('npm install OK');
+              console.error('[webhook] Aborting: npm install failed');
+              return;
             }}
 
             // 5. next build
-            exec(`cd ${{SITE_PATH}} && NODE_OPTIONS='--max-old-space-size=4096' npm run build 2>&1`, (buildErr, buildOut, buildErr2) => {{
+            runCmd(`cd ${{SITE_PATH}} && NODE_OPTIONS='--max-old-space-size=4096' npx next build 2>&1`, 'next build', (buildErr) => {{
               if (buildErr) {{
-                console.error('build error:', buildErr.message);
-              }} else {{
-                console.log('build OK');
+                console.error('[webhook] Build failed, NOT restarting');
+                return;
               }}
 
-              // 6. Копируем .env в standalone
-              copyEnvToStandalone();
+              // 6. Копируем .env и static в standalone
+              copyToStandalone();
 
               // 7. pm2 restart с обновлением env
-              exec(`pm2 restart ${{PROJECT}} --update-env 2>&1`, (pm2Err, pm2Out) => {{
+              runCmd(`pm2 restart ${{PROJECT}} --update-env 2>&1`, 'pm2 restart', (pm2Err) => {{
                 if (pm2Err) {{
-                  console.error('pm2 restart error:', pm2Err.message);
+                  console.error('[webhook] pm2 restart failed');
                 }} else {{
-                  console.log('Deploy completed successfully');
+                  console.log('[webhook] Deploy completed successfully');
                 }}
               }});
             }});
@@ -1405,10 +1703,14 @@ const server = http.createServer((req, res) => {{
         res.writeHead(200, {{'Content-Type': 'application/json'}});
         res.end(JSON.stringify({{ status: 'ok', message: 'Deploy started' }}));
       }} catch(e) {{
-        res.writeHead(400);
-        res.end('Bad request');
+        console.error('[webhook] Error processing request:', e.message);
+        res.writeHead(400, {{'Content-Type': 'application/json'}});
+        res.end(JSON.stringify({{ status: 'error', message: 'Bad request' }}));
       }}
     }});
+  }} else if (req.method === 'GET' && req.url === '/health') {{
+    res.writeHead(200, {{'Content-Type': 'application/json'}});
+    res.end(JSON.stringify({{ status: 'ok', project: PROJECT, port: PORT, branch: GIT_BRANCH }}));
   }} else {{
     res.writeHead(404);
     res.end('Not found');
@@ -1416,7 +1718,27 @@ const server = http.createServer((req, res) => {{
 }});
 
 server.listen(PORT, '0.0.0.0', () => {{
-  console.log(`Webhook server for ${{PROJECT}} listening on port ${{PORT}}`);
+  console.log(`Webhook server for ${{PROJECT}} listening on port ${{PORT}} (branch: ${{GIT_BRANCH}}, mode: ${{RUN_MODE}})`);
+}});
+
+// Graceful shutdown
+process.on('SIGINT', () => {{
+  console.log('[webhook] Shutting down...');
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 5000);
+}});
+process.on('SIGTERM', () => {{
+  console.log('[webhook] SIGTERM received, shutting down...');
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 5000);
+}});
+
+// Prevent crashes from uncaught errors
+process.on('uncaughtException', (e) => {{
+  console.error('[webhook] Uncaught exception:', e.message);
+}});
+process.on('unhandledRejection', (e) => {{
+  console.error('[webhook] Unhandled rejection:', e);
 }});
 """
         webhook_path = os.path.join(site_path, "webhook-server.js")
@@ -1424,9 +1746,13 @@ server.listen(PORT, '0.0.0.0', () => {{
             with open(webhook_path, 'w') as f:
                 f.write(webhook_script)
 
+            # Удаляем старый webhook процесс если есть
+            webhook_pm2_name = f"{pm2_name}-webhook"
+            run_cmd(f"pm2 delete {webhook_pm2_name} 2>/dev/null")
+
             rc, out, err = run_cmd(
                 f"cd {site_path} && pm2 start webhook-server.js "
-                f"--name {project_name}-webhook"
+                f"--name {webhook_pm2_name}"
             )
             run_cmd("pm2 save")
 
@@ -1444,73 +1770,113 @@ server.listen(PORT, '0.0.0.0', () => {{
 
                 webhook_url = f"http://{server_ip}:{webhook_port}/webhook"
 
-                # Формируем JSON для GitHub API через json.dumps (безопасно)
-                webhook_payload = json.dumps({
-                    "name": "web",
-                    "active": True,
-                    "events": ["push"],
-                    "config": {
-                        "url": webhook_url,
-                        "content_type": "json"
-                    }
-                })
-
-                # Записываем payload во временный файл чтобы избежать
-                # проблем с экранированием в shell
-                tmp_dir = os.path.join(site_path, "tmp")
-                os.makedirs(tmp_dir, exist_ok=True)
-                payload_file = os.path.join(tmp_dir, "_webhook_payload.json")
-                with open(payload_file, 'w') as f:
-                    f.write(webhook_payload)
-
-                rc_hook, out_hook, err_hook = run_cmd(
-                    f"curl -s -w '\\n%{{http_code}}' -X POST "
-                    f"-H 'Authorization: token {github_token}' "
+                # Сначала проверяем — нет ли уже вебхука с таким URL?
+                rc_list, out_list, _ = run_cmd(
+                    f"curl -s -H 'Authorization: token {github_token}' "
                     f"-H 'Accept: application/vnd.github.v3+json' "
-                    f"-H 'Content-Type: application/json' "
-                    f"https://api.github.com/repos/{repo_name}/hooks "
-                    f"-d @{payload_file}",
-                    timeout=15
+                    f"https://api.github.com/repos/{repo_name}/hooks",
+                    timeout=10
                 )
-
-                # Удаляем временный файл
-                try:
-                    os.remove(payload_file)
-                except OSError:
-                    pass
-
-                # Разбираем ответ: последняя строка — HTTP status code
-                hook_lines = out_hook.strip().split('\n') if out_hook else []
-                hook_status = hook_lines[-1].strip() if hook_lines else "000"
-
-                if hook_status == "201":
-                    webhook_details += f"\nWebhook URL: {webhook_url}"
-                    webhook_details += "\nWebhook зарегистрирован в GitHub"
-                else:
-                    # Попытка парсинга ошибки из JSON-ответа
-                    hook_body = '\n'.join(hook_lines[:-1]) if len(hook_lines) > 1 else out_hook or ""
-                    error_msg = ""
+                hook_exists = False
+                duplicate_ids = []
+                if rc_list == 0 and out_list:
                     try:
-                        error_data = json.loads(hook_body)
-                        error_msg = error_data.get("message", "")
-                        if error_data.get("errors"):
-                            for e in error_data["errors"]:
-                                error_msg += f" | {e.get('message', str(e))}"
+                        existing_hooks = json.loads(out_list)
+                        for h in existing_hooks:
+                            h_url = h.get("config", {}).get("url", "")
+                            h_id = h.get("id")
+                            if h_url == webhook_url:
+                                hook_exists = True
+                            elif "/webhook" in h_url and h_url.startswith(f"http://{server_ip}:"):
+                                # Вебхук на этот сервер но с другим портом —
+                                # вероятно от предыдущего деплоя, удаляем
+                                duplicate_ids.append(h_id)
                     except (json.JSONDecodeError, TypeError):
-                        error_msg = hook_body[:200]
+                        pass
 
+                # Удаляем устаревшие вебхуки от предыдущих деплоев
+                for dup_id in duplicate_ids:
+                    run_cmd(
+                        f"curl -s -X DELETE "
+                        f"-H 'Authorization: token {github_token}' "
+                        f"https://api.github.com/repos/{repo_name}/hooks/{dup_id}",
+                        timeout=5
+                    )
+                    self.log(f"Удалён устаревший webhook #{dup_id}")
+
+                if hook_exists:
                     webhook_details += f"\nWebhook URL: {webhook_url}"
-                    webhook_details += f"\nWebhook НЕ зарегистрирован (HTTP {hook_status})"
-                    if error_msg:
-                        webhook_details += f"\nПричина: {error_msg[:200]}"
-                    # Не считаем ошибкой всего блока — webhook можно добавить вручную
-                    console.print(
-                        f"  [yellow]Внимание: webhook не удалось зарегистрировать в GitHub "
-                        f"(HTTP {hook_status})[/yellow]"
+                    webhook_details += "\nWebhook уже зарегистрирован в GitHub"
+                else:
+                    # Формируем JSON для GitHub API через json.dumps (безопасно)
+                    # Добавляем secret чтобы GitHub отправлял X-Hub-Signature-256
+                    webhook_payload = json.dumps({
+                        "name": "web",
+                        "active": True,
+                        "events": ["push"],
+                        "config": {
+                            "url": webhook_url,
+                            "content_type": "json",
+                            "secret": secret
+                        }
+                    })
+
+                    # Записываем payload во временный файл чтобы избежать
+                    # проблем с экранированием в shell
+                    tmp_dir = os.path.join(site_path, "tmp")
+                    os.makedirs(tmp_dir, exist_ok=True)
+                    payload_file = os.path.join(tmp_dir, "_webhook_payload.json")
+                    with open(payload_file, 'w') as f:
+                        f.write(webhook_payload)
+
+                    rc_hook, out_hook, err_hook = run_cmd(
+                        f"curl -s -w '\\n%{{http_code}}' -X POST "
+                        f"-H 'Authorization: token {github_token}' "
+                        f"-H 'Accept: application/vnd.github.v3+json' "
+                        f"-H 'Content-Type: application/json' "
+                        f"https://api.github.com/repos/{repo_name}/hooks "
+                        f"-d @{payload_file}",
+                        timeout=15
                     )
-                    console.print(
-                        f"  [yellow]Добавьте вручную: {webhook_url}[/yellow]"
-                    )
+
+                    # Удаляем временный файл
+                    try:
+                        os.remove(payload_file)
+                    except OSError:
+                        pass
+
+                    # Разбираем ответ: последняя строка — HTTP status code
+                    hook_lines = out_hook.strip().split('\n') if out_hook else []
+                    hook_status = hook_lines[-1].strip() if hook_lines else "000"
+
+                    if hook_status == "201":
+                        webhook_details += f"\nWebhook URL: {webhook_url}"
+                        webhook_details += "\nWebhook зарегистрирован в GitHub"
+                    else:
+                        # Попытка парсинга ошибки из JSON-ответа
+                        hook_body = '\n'.join(hook_lines[:-1]) if len(hook_lines) > 1 else out_hook or ""
+                        error_msg = ""
+                        try:
+                            error_data = json.loads(hook_body)
+                            error_msg = error_data.get("message", "")
+                            if error_data.get("errors"):
+                                for e in error_data["errors"]:
+                                    error_msg += f" | {e.get('message', str(e))}"
+                        except (json.JSONDecodeError, TypeError):
+                            error_msg = hook_body[:200]
+
+                        webhook_details += f"\nWebhook URL: {webhook_url}"
+                        webhook_details += f"\nWebhook НЕ зарегистрирован (HTTP {hook_status})"
+                        if error_msg:
+                            webhook_details += f"\nПричина: {error_msg[:200]}"
+                        # Не считаем ошибкой всего блока — webhook можно добавить вручную
+                        console.print(
+                            f"  [yellow]Внимание: webhook не удалось зарегистрировать в GitHub "
+                            f"(HTTP {hook_status})[/yellow]"
+                        )
+                        console.print(
+                            f"  [yellow]Добавьте вручную: {webhook_url}[/yellow]"
+                        )
 
             self.ctx["webhook_port"] = webhook_port
             return self._add_result(15, "autodeploy", "Настройка автодеплоя", True,
@@ -1707,6 +2073,7 @@ def print_final_summary(executor: DeployExecutor, ctx: Dict[str, Any]):
         ("Домен", ctx.get("domain", "")),
         ("Путь", ctx.get("site_path", "")),
         ("Порт приложения", str(ctx.get("app_port", ""))),
+        ("Git ветка", ctx.get("git_branch", "")),
         ("Файл БД", ctx.get("db_file", "не найден")),
         ("Репозиторий", ctx.get("repo_name", "")),
         ("Webhook порт", str(ctx.get("webhook_port", ""))),
