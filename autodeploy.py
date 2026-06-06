@@ -224,8 +224,26 @@ class DeployExecutor:
             elif not os.path.exists(site_path) and not os.path.exists(site_path_punycode):
                 # Ни одной не существует — создаём punycode-путь (ASCII-безопасный)
                 site_path = site_path_punycode
-            # Если кириллический путь существует — используем его
-            # (но предупреждаем, что могут быть проблемы)
+            elif os.path.exists(site_path) and not os.path.exists(site_path_punycode):
+                # Кириллическая директория существует, Punycode — нет
+                # Рекомендуем переименовать, но не заставляем
+                console.print(
+                    f"  [yellow]Внимание: директория {site_path} — кириллическая.[/yellow]"
+                )
+                console.print(
+                    f"  [yellow]Кириллица в путях может ломать PM2, npm, certbot.[/yellow]"
+                )
+                console.print(
+                    f"  [yellow]Рекомендуется переименовать: mv '{site_path}' '{site_path_punycode}'[/yellow]"
+                )
+                # Переименовываем автоматически если можем
+                try:
+                    os.rename(site_path, site_path_punycode)
+                    site_path = site_path_punycode
+                    console.print(f"  [green]Директория переименована в {site_path_punycode}[/green]")
+                except OSError:
+                    # Не смогли — используем как есть
+                    pass
         else:
             site_path_punycode = site_path
 
@@ -2111,8 +2129,18 @@ def main():
     console.print()
 
     ctx["project_name"] = Prompt.ask("  [bold yellow]Название проекта[/bold yellow]")
+
+    # Подсказка для пути: для кириллических доменов показываем Punycode,
+    # т.к. именно он будет реально использоваться в файловой системе
+    _path_hint = ctx.get('project_name', 'mysite')
+    _punycode_hint = domain_to_punycode(_path_hint)
+    if _punycode_hint != _path_hint:
+        _path_display = f"/var/www/{_punycode_hint} (Punycode для {_path_hint})"
+    else:
+        _path_display = f"/var/www/{_path_hint}"
+
     ctx["site_path"] = Prompt.ask("  [bold yellow]Путь к сайту[/bold yellow]",
-                                  default=f"/var/www/{ctx.get('project_name', 'mysite')}")
+                                  default=f"/var/www/{_punycode_hint}")
 
     result = executor.execute_block(1)
     print_result(result)
