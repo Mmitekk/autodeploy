@@ -106,6 +106,25 @@ def get_site_domain(site_path: str) -> str:
     return os.path.basename(site_path.rstrip('/'))
 
 
+def domain_to_punycode(domain: str) -> str:
+    """Конвертирует кириллический/IDN домен в Punycode для Nginx и DNS.
+
+    Nginx не понимает кириллицу в server_name — ему нужен xn-- формат.
+    Браузеры автоматически конвертируют кириллические домены в Punycode
+    в HTTP-заголовке Host, поэтому Nginx должен матчить именно Punycode.
+
+    Примеры:
+        пункт-службы.рф → xn------...xn--p1ai
+        example.com → example.com (без изменений)
+    """
+    try:
+        # Python 3 встроенная IDNA-конвертация
+        return domain.encode('idna').decode('ascii')
+    except (UnicodeError, UnicodeDecodeError):
+        # Если не удалось — возвращаем как есть
+        return domain
+
+
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║  РЕЗУЛЬТАТ БЛОКА                                                         ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
@@ -156,22 +175,35 @@ class DeployExecutor:
             return self._add_result(1, "project", "Название проекта и путь", False,
                                     "Путь к сайту не указан")
 
+        # Определяем домен из пути и конвертируем в Punycode если кириллица
+        raw_domain = get_site_domain(site_path)
+        punycode_domain = domain_to_punycode(raw_domain)
+        is_idn = raw_domain != punycode_domain  # True если домен кириллический
+
         if os.path.exists(site_path):
             self.ctx["site_path"] = site_path
             self.ctx["project_name"] = project_name
-            self.ctx["domain"] = get_site_domain(site_path)
+            self.ctx["domain"] = punycode_domain
+            self.ctx["domain_display"] = raw_domain  # Оригинал для отображения
+            self.ctx["domain_is_idn"] = is_idn
+            details = f"Путь: {site_path}\nДомен: {raw_domain}"
+            if is_idn:
+                details += f"\nДомен (Punycode): {punycode_domain}"
             return self._add_result(1, "project", "Название проекта и путь", True,
-                                    f"Проект: {project_name}",
-                                    f"Путь: {site_path}\nДомен: {self.ctx['domain']}")
+                                    f"Проект: {project_name}", details)
         else:
             try:
                 os.makedirs(site_path, exist_ok=True)
                 self.ctx["site_path"] = site_path
                 self.ctx["project_name"] = project_name
-                self.ctx["domain"] = get_site_domain(site_path)
+                self.ctx["domain"] = punycode_domain
+                self.ctx["domain_display"] = raw_domain
+                self.ctx["domain_is_idn"] = is_idn
+                details = f"Путь: {site_path}\nДомен: {raw_domain}"
+                if is_idn:
+                    details += f"\nДомен (Punycode): {punycode_domain}"
                 return self._add_result(1, "project", "Название проекта и путь", True,
-                                        f"Проект: {project_name} (путь создан)",
-                                        f"Путь: {site_path}\nДомен: {self.ctx['domain']}")
+                                        f"Проект: {project_name} (путь создан)", details)
             except Exception as e:
                 return self._add_result(1, "project", "Название проекта и путь", False,
                                         f"Не удалось создать путь: {site_path}", str(e))
@@ -256,12 +288,24 @@ class DeployExecutor:
         if not site_domain:
             site_domain = self.ctx.get("domain", "")
 
-        self.ctx["site_domain"] = site_domain
+        # Конвертируем в Punycode для системных конфигов (Nginx, DNS)
+        # Оригинал сохраняем для отображения и URL
+        domain_display = site_domain
+        site_domain_punycode = domain_to_punycode(site_domain)
+        is_idn = site_domain != site_domain_punycode
+
+        # site_domain — Punycode (для Nginx, DNS, curl)
+        self.ctx["site_domain"] = site_domain_punycode
+        # domain_display — оригинал (для URL, отображения)
+        self.ctx["domain_display"] = domain_display
         self.ctx["use_ssl"] = use_ssl == "yes"
 
-        if site_domain:
+        if site_domain_punycode:
+            display_text = domain_display
+            if is_idn:
+                display_text += f" ({site_domain_punycode})"
             return self._add_result(4, "domain_ssl", "Домен и SSL", True,
-                                    f"Домен: {site_domain}, SSL: {'Да' if use_ssl == 'yes' else 'Нет'}")
+                                    f"Домен: {display_text}, SSL: {'Да' if use_ssl == 'yes' else 'Нет'}")
         else:
             return self._add_result(4, "domain_ssl", "Домен и SSL", True,
                                     "Домен не указан — Apache не настраивается")
@@ -661,13 +705,14 @@ class DeployExecutor:
                 f"DB_FILE={db_abs}",
             ])
 
-        # Site URL
+        # Site URL — используем domain_display (кириллицу) для URL
         if site_domain:
             proto = "https" if use_ssl else "http"
+            domain_for_url = self.ctx.get("domain_display", site_domain)
             env_lines.extend([
                 "",
                 "# Site",
-                f"NEXT_PUBLIC_SITE_URL={proto}://{site_domain}",
+                f"NEXT_PUBLIC_SITE_URL={proto}://{domain_for_url}",
             ])
         else:
             env_lines.extend([
@@ -1099,10 +1144,11 @@ class DeployExecutor:
 
         if site_domain:
             proto = "https" if use_ssl else "http"
+            domain_for_url = self.ctx.get("domain_display", site_domain)
             env_lines.extend([
                 "",
                 "# Site",
-                f"NEXT_PUBLIC_SITE_URL={proto}://{site_domain}",
+                f"NEXT_PUBLIC_SITE_URL={proto}://{domain_for_url}",
             ])
         else:
             env_lines.extend([
@@ -1738,6 +1784,8 @@ def main():
 
     # ── Блок 4: Домен и SSL ─────────────────────────────────────────────
     print_block_header(4, "Домен и SSL", "MANUAL")
+    console.print("  [dim]Можно вводить кириллицей (пункт.рф) — скрипт автоматически[/dim]")
+    console.print("  [dim]конвертирует в Punycode для Nginx и DNS.[/dim]")
     ctx["site_domain"] = Prompt.ask("  [bold yellow]Домен[/bold yellow] (Enter чтобы пропустить)",
                                     default="")
     if ctx["site_domain"]:
