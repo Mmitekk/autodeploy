@@ -1122,7 +1122,30 @@ class DeployExecutor:
             # Удаляем старый процесс если есть
             run_cmd(f"pm2 delete {pm2_name} 2>/dev/null")
 
-            rc, out, err = run_cmd(f"cd {site_path} && pm2 start ecosystem.config.js")
+            # Убеждаемся, что системная переменная HOSTNAME не перезапишет
+            # HOSTNAME из ecosystem.config.js. PM2 не переопределяет
+            # существующие env-переменные при restart, поэтому добавляем
+            # HOSTNAME=0.0.0.0 в systemd-сервис PM2 (если используется systemd)
+            rc_svc, _, _ = run_cmd("systemctl cat pm2-root 2>/dev/null")
+            if rc_svc == 0:
+                rc_grep, grep_out, _ = run_cmd(
+                    "grep 'HOSTNAME=0.0.0.0' /etc/systemd/system/pm2-root.service"
+                )
+                if rc_grep != 0:
+                    run_cmd(
+                        "sed -i '/^Environment=PM2_HOME/a "
+                        "Environment=HOSTNAME=0.0.0.0' "
+                        "/etc/systemd/system/pm2-root.service && "
+                        "systemctl daemon-reload"
+                    )
+                    steps.append("HOSTNAME=0.0.0.0 добавлен в pm2-root.service")
+
+            # Запускаем с HOSTNAME в префиксе чтобы гарантировать привязку
+            # к 0.0.0.0, даже если PM2 проигнорирует env из ecosystem
+            rc, out, err = run_cmd(
+                f"cd {site_path} && HOSTNAME=0.0.0.0 HOST=0.0.0.0 "
+                f"pm2 start ecosystem.config.js --update-env"
+            )
             if rc == 0:
                 run_cmd("pm2 save")
                 mode_label = self.ctx.get("pm2_mode_label", "Standard")
@@ -1576,7 +1599,7 @@ function verifySignature(body, signature) {{
   }}
 }}
 
-// Сохраняем .env перед git pull чтобы не потерять настройки
+// Сохраняем .env перед синхронизацией чтобы не потерять настройки
 function backupEnv() {{
   try {{
     if (fs.existsSync(ENV_FILE)) {{
@@ -1586,14 +1609,14 @@ function backupEnv() {{
   return null;
 }}
 
-// Восстанавливаем .env после git pull если он был изменён
+// Восстанавливаем .env после синхронизации если он был изменён
 function restoreEnv(originalContent) {{
   try {{
     if (originalContent && fs.existsSync(ENV_FILE)) {{
       const current = fs.readFileSync(ENV_FILE, 'utf8');
       if (current !== originalContent) {{
         fs.writeFileSync(ENV_FILE, originalContent, 'utf8');
-        console.log('[webhook] .env restored after git pull (was overwritten)');
+        console.log('[webhook] .env restored after git sync (was overwritten)');
       }}
     }}
   }} catch (e) {{
@@ -1614,18 +1637,18 @@ function copyToStandalone() {{
       fs.copyFileSync(ENV_FILE, path.join(standaloneDir, '.env'));
       console.log('[webhook] .env copied to .next/standalone/');
     }}
-    // Копируем static файлы (CSS, JS, шрифты)
+    // Копируем static файлы (CSS, JS, шрифты) — всегда перезаписываем
     const staticSrc = path.join(SITE_PATH, '.next', 'static');
     const staticDst = path.join(standaloneDir, '.next', 'static');
-    if (fs.existsSync(staticSrc) && !fs.existsSync(staticDst)) {{
-      fs.cpSync(staticSrc, staticDst, {{ recursive: true }});
+    if (fs.existsSync(staticSrc)) {{
+      fs.cpSync(staticSrc, staticDst, {{ recursive: true, force: true }});
       console.log('[webhook] .next/static copied to standalone');
     }}
-    // Копируем public
+    // Копируем public — всегда перезаписываем
     const publicSrc = path.join(SITE_PATH, 'public');
     const publicDst = path.join(standaloneDir, 'public');
-    if (fs.existsSync(publicSrc) && !fs.existsSync(publicDst)) {{
-      fs.cpSync(publicSrc, publicDst, {{ recursive: true }});
+    if (fs.existsSync(publicSrc)) {{
+      fs.cpSync(publicSrc, publicDst, {{ recursive: true, force: true }});
       console.log('[webhook] public copied to standalone');
     }}
   }} catch (e) {{
@@ -1681,13 +1704,15 @@ const server = http.createServer((req, res) => {{
         // 1. Бэкапим .env
         const envBackup = backupEnv();
 
-        // 2. git pull
-        runCmd(`cd ${{SITE_PATH}} && git pull origin ${{GIT_BRANCH}} 2>&1`, 'git pull', (pullErr) => {{
+        // 2. Синхронизация: fetch + reset --hard (без конфликтов!)
+        // Сначала отменяем любой незавершённый merge, потом подтягиваем и хард-резетим
+        const syncCmd = `cd ${{SITE_PATH}} && git merge --abort 2>/dev/null; git fetch origin ${{GIT_BRANCH}} 2>&1 && git reset --hard origin/${{GIT_BRANCH}} 2>&1`;
+        runCmd(syncCmd, 'git sync (fetch+reset)', (syncErr) => {{
           // 3. Восстанавливаем .env если git его перезаписал
           restoreEnv(envBackup);
 
-          if (pullErr) {{
-            console.error('[webhook] Aborting: git pull failed');
+          if (syncErr) {{
+            console.error('[webhook] Aborting: git sync failed');
             return;
           }}
 
