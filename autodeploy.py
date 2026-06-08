@@ -480,12 +480,8 @@ class DeployExecutor:
         # Fallback: наличие директорий
         if os.path.isdir("/etc/nginx/sites-enabled") or os.path.isdir("/etc/nginx/conf.d"):
             return "nginx"
-        if os.path.isdir("/etc/apache2/sites-enabled"):
+        if os.path.isdir("/etc/apache2/sites-enabled") or os.path.isdir("/etc/httpd/conf.d"):
             return "apache"
-        # Проверяем установлен ли nginx
-        rc, _, _ = run_cmd("which nginx 2>/dev/null")
-        if rc == 0:
-            return "nginx"
         return "unknown"
 
     def _config_has_proxy(self, config_path: str, port: int) -> bool:
@@ -500,22 +496,37 @@ class DeployExecutor:
             return False
 
     def _update_nginx_config(self, domain: str, site_path: str, app_port: int) -> BlockResult:
-        """Создаёт или обновляет конфиг Nginx."""
-        # Определяем структуру директорий nginx (Debian vs RHEL/Alma)
-        nginx_sites = "/etc/nginx/sites-available"
-        nginx_enabled = "/etc/nginx/sites-enabled"
-        nginx_conf_d = "/etc/nginx/conf.d"
-        use_conf_d = False
+        """Создаёт или обновляет конфиг Nginx.
+        
+        Автоматически определяет стиль дистрибутива:
+        - RHEL (Alma Linux, CentOS, Rocky): /etc/nginx/conf.d/{domain}.conf
+        - Debian/Ubuntu: /etc/nginx/sites-available/{domain} + симлинк в sites-enabled/
+        """
+        # Автоопределение: RHEL использует conf.d/, Debian — sites-available/
+        is_rhel = os.path.isdir("/etc/nginx/conf.d")
+        is_debian = os.path.isdir("/etc/nginx/sites-available")
 
-        # На RHEL/Alma Linux нет sites-available, используется conf.d/
-        if not os.path.isdir(nginx_sites) and os.path.isdir(nginx_conf_d):
-            use_conf_d = True
-
-        # Имя файла: в conf.d нужен суффикс .conf
-        if use_conf_d:
-            config_path = os.path.join(nginx_conf_d, f"{domain}.conf")
-        else:
+        if is_rhel:
+            nginx_sites = "/etc/nginx/conf.d"
+            config_path = os.path.join(nginx_sites, f"{domain}.conf")
+            needs_symlink = False
+        elif is_debian:
+            nginx_sites = "/etc/nginx/sites-available"
+            nginx_enabled = "/etc/nginx/sites-enabled"
             config_path = os.path.join(nginx_sites, domain)
+            needs_symlink = True
+        else:
+            # Если ни один не найден — создаём conf.d/
+            nginx_sites = "/etc/nginx/conf.d"
+            os.makedirs(nginx_sites, exist_ok=True)
+            config_path = os.path.join(nginx_sites, f"{domain}.conf")
+            needs_symlink = False
+
+        # Переопределяем nginx_enabled для Debian-ветки
+        if is_debian:
+            nginx_enabled = "/etc/nginx/sites-enabled"
+        else:
+            nginx_enabled = None
         existing_proxy = False
 
         if os.path.exists(config_path):
@@ -556,8 +567,8 @@ class DeployExecutor:
         try:
             with open(config_path, 'w') as f:
                 f.write(vhost)
-            # Создаём симлинк (только для Debian-структуры)
-            if not use_conf_d:
+            # Симлинк — только для Debian-style
+            if needs_symlink and nginx_enabled:
                 enabled_link = os.path.join(nginx_enabled, domain)
                 if not os.path.exists(enabled_link):
                     run_cmd(f"ln -sf {config_path} {enabled_link}")
@@ -587,10 +598,11 @@ class DeployExecutor:
                 return self._add_result(6, "web_server", "Конфигурация веб-сервера", False,
                                         f"Nginx конфиг ошибочен: {test_err[:200]}")
 
-            action = "Обновлён" if os.path.exists(config_path) else "Создан"
+            action = "Обновлён" if existing_proxy else "Создан"
+            distro = "RHEL (conf.d)" if is_rhel else "Debian (sites-available)"
             return self._add_result(6, "web_server", "Конфигурация веб-сервера", True,
                                     f"Nginx: {action} конфиг для {domain}",
-                                    f"Прокси на порт {app_port}")
+                                    f"Прокси на порт {app_port}\nПуть: {config_path}\nСтиль: {distro}")
         except Exception as e:
             return self._add_result(6, "web_server", "Конфигурация веб-сервера", False,
                                     f"Ошибка Nginx: {e}")
@@ -728,9 +740,10 @@ class DeployExecutor:
             result = self._update_apache_config(domain, site_path, app_port)
         else:
             # Не определили — пробуем оба
-            if os.path.isdir("/etc/nginx/sites-available") or os.path.isdir("/etc/nginx/conf.d"):
+            # RHEL: /etc/nginx/conf.d/  |  Debian: /etc/nginx/sites-available/
+            if os.path.isdir("/etc/nginx/conf.d") or os.path.isdir("/etc/nginx/sites-available"):
                 result = self._update_nginx_config(domain, site_path, app_port)
-            elif os.path.isdir("/etc/apache2/sites-available"):
+            elif os.path.isdir("/etc/apache2/sites-available") or os.path.isdir("/etc/httpd/conf.d"):
                 result = self._update_apache_config(domain, site_path, app_port)
             else:
                 result = self._add_result(6, "web_server", "Конфигурация веб-сервера", False,
@@ -802,6 +815,7 @@ class DeployExecutor:
             "node_modules/",
             ".next/",
             "out/",
+            "db/",
             "*.db",
             "*.db-journal",
             "*.db-wal",
@@ -809,6 +823,10 @@ class DeployExecutor:
             ".env",
             ".env.local",
             ".env.*.local",
+            # Загруженные пользователями файлы — НЕ в git!
+            # При git reset --hard они затираются.
+            # public/uploads/ должна содержать только серверные файлы.
+            "public/uploads/",
             "*.log",
             "npm-debug.log*",
             ".DS_Store",
@@ -892,6 +910,11 @@ class DeployExecutor:
             ])
         else:
             # Пробуем найти db/custom.db (стандартный путь в шаблонах)
+            # Создаём директорию db/ если нет — DATABASE_URL должен указывать
+            # на существующую директорию, иначе Prisma упадёт при migrate
+            db_dir = os.path.join(site_path, "db")
+            os.makedirs(db_dir, exist_ok=True)
+
             db_abs = os.path.join(site_path, "db", "custom.db")
             if not os.path.exists(db_abs):
                 db_abs = os.path.join(site_path, "db", f"{project_name}.db")
@@ -951,8 +974,45 @@ class DeployExecutor:
             os.makedirs(os.path.dirname(env_path), exist_ok=True)
             with open(env_path, 'w') as f:
                 f.write(env)
+            # Создаём .env.example — шаблон для репозитория
+            # Этот файл БЕЗОПАСНО отслеживать в git — он содержит плейсхолдеры,
+            # а не реальные значения. Нейронка видит .env.example и понимает
+            # какие переменные нужны проекту.
+            env_example_path = os.path.join(site_path, ".env.example")
+            example_lines = [
+                "# Application — скопируйте в .env и заполните реальными значениями",
+                f"APP_NAME={project_name}",
+                f"APP_PORT={app_port}",
+                "NODE_ENV=production",
+                "",
+                "# Server",
+                "HOST=0.0.0.0",
+                f"PORT={app_port}",
+                "",
+                "# Database (SQLite)",
+                '# ВАЖНО: На сервере используйте АБСОЛЮТНЫЙ путь!',
+                '# Пример для сервера: DATABASE_URL="file:/var/www/example.ru/db/custom.db"',
+                '# Пример локально: DATABASE_URL="file:./db/custom.db"',
+                'DATABASE_URL="file:./db/custom.db"',
+                "",
+                "# Site",
+                f"# NEXT_PUBLIC_SITE_URL=http://localhost:{app_port}",
+                "",
+                "# Security",
+                "# SECRET_KEY=сгенерируется_автоматически",
+                "",
+                "# SSL",
+                "ENABLE_SSL=false",
+            ]
+            try:
+                with open(env_example_path, 'w') as f:
+                    f.write('\n'.join(example_lines) + '\n')
+            except Exception:
+                pass  # .env.example — не критично
+
             return self._add_result(10, "env_file", "Создание .env", True,
-                                    f"Создан: {env_path}")
+                                    f"Создан: {env_path}",
+                                    f"Шаблон: {env_example_path}")
         except Exception as e:
             return self._add_result(10, "env_file", "Создание .env", False, f"Ошибка: {e}")
 
@@ -1029,9 +1089,150 @@ class DeployExecutor:
                 need_build = True
 
             if need_build:
+                # Убеждаемся, что db/ НЕ отслеживается git
+                # (база данных — только серверные данные, не для репозитория)
+                rc_db_track, out_db_track, _ = run_cmd(
+                    f"cd {site_path} && git ls-files db/"
+                )
+                if out_db_track.strip():
+                    run_cmd(f"cd {site_path} && git rm -r --cached db/ 2>/dev/null")
+                    steps.append("db/ удалена из git (файлы остаются на диске)")
+
+                # Убеждаемся, что .env НЕ отслеживается git
+                rc_env_track, out_env_track, _ = run_cmd(
+                    f"cd {site_path} && git ls-files .env .env.local .env.production"
+                )
+                if out_env_track.strip():
+                    for env_f in out_env_track.strip().split('\n'):
+                        env_f = env_f.strip()
+                        if env_f:
+                            run_cmd(f"cd {site_path} && git rm --cached {env_f} 2>/dev/null")
+                    steps.append(".env удалён из git (файл остаётся на диске)")
+
+                # Убеждаемся, что public/uploads/ НЕ отслеживается git
+                # (пользовательские загрузки — только серверные данные)
+                rc_uploads_track, out_uploads_track, _ = run_cmd(
+                    f"cd {site_path} && git ls-files public/uploads/"
+                )
+                if out_uploads_track.strip():
+                    # Бэкапим public/uploads/ перед удалением из git
+                    uploads_dir = os.path.join(site_path, "public", "uploads")
+                    uploads_backup = os.path.join(site_path, "tmp", "uploads_backup")
+                    if os.path.isdir(uploads_dir):
+                        try:
+                            if os.path.isdir(uploads_backup):
+                                shutil.rmtree(uploads_backup)
+                            shutil.copytree(uploads_dir, uploads_backup)
+                            steps.append("public/uploads/ → бэкап в tmp/uploads_backup/")
+                        except Exception as e:
+                            steps.append(f"Бэкап public/uploads/: {e}")
+                    run_cmd(f"cd {site_path} && git rm -r --cached public/uploads/ 2>/dev/null")
+                    steps.append("public/uploads/ удалена из git (файлы остаются на диске)")
+                    # Восстанавливаем из бэкапа если git rm удалил файлы
+                    if os.path.isdir(uploads_backup) and os.path.isdir(uploads_dir):
+                        try:
+                            # Копируем только файлы которых нет (не перезаписываем)
+                            for root, dirs, files in os.walk(uploads_backup):
+                                rel_root = os.path.relpath(root, uploads_backup)
+                                dst_root = os.path.join(uploads_dir, rel_root)
+                                os.makedirs(dst_root, exist_ok=True)
+                                for f in files:
+                                    src_f = os.path.join(root, f)
+                                    dst_f = os.path.join(dst_root, f)
+                                    if not os.path.exists(dst_f):
+                                        shutil.copy2(src_f, dst_f)
+                        except Exception:
+                            pass
+
+                # Создаём директорию db/ если нет (для SQLite базы)
+                db_dir = os.path.join(site_path, "db")
+                os.makedirs(db_dir, exist_ok=True)
+
+                # Читаем DATABASE_URL из .env для передачи в prisma и build
+                # ВАЖНО: Не используем "source .env" — ломается на спецсимволах!
+                db_url = ""
+                env_path_check = os.path.join(site_path, ".env")
+                if os.path.exists(env_path_check):
+                    try:
+                        with open(env_path_check, 'r') as ef:
+                            for line in ef:
+                                line = line.strip()
+                                if line.startswith('DATABASE_URL='):
+                                    db_url = line.split('=', 1)[1].strip().strip('"').strip("'")
+                                    break
+                    except Exception:
+                        pass
+                env_prefix = f"DATABASE_URL='{db_url}' " if db_url else ""
+
+                # prisma generate + migrate deploy — если есть prisma/schema.prisma
+                prisma_schema = os.path.join(site_path, "prisma", "schema.prisma")
+                if os.path.exists(prisma_schema):
+                    console.print("  [cyan]Генерация Prisma клиента...[/cyan]")
+                    # Передаём DATABASE_URL напрямую, а не через source .env
+                    # source .env может падать на спецсимволах в паролях
+                    rc_pg, _, err_pg = run_cmd(
+                        f"cd {site_path} && {env_prefix}npx prisma generate 2>&1", timeout=120
+                    )
+                    if rc_pg == 0:
+                        steps.append("prisma generate — OK")
+                    else:
+                        steps.append(f"prisma generate — ошибка (не критично): {err_pg[:100]}")
+
+                    # prisma migrate deploy — БЕЗОПАСНО применяет ожидающие миграции
+                    # ВАЖНО: используем migrate deploy, а НЕ migrate dev!
+                    # migrate dev может пересоздать БД и удалить данные!
+                    # migrate deploy только применяет новые миграции без потери данных
+                    prisma_migrations = os.path.join(site_path, "prisma", "migrations")
+                    if os.path.isdir(prisma_migrations):
+                        console.print("  [cyan]Применение миграций Prisma...[/cyan]")
+                        rc_pm, out_pm, err_pm = run_cmd(
+                            f"cd {site_path} && {env_prefix}npx prisma migrate deploy 2>&1", timeout=120
+                        )
+                        if rc_pm == 0:
+                            steps.append("prisma migrate deploy — OK")
+                        else:
+                            steps.append(f"prisma migrate deploy — ошибка: {err_pm[:150]}")
+
+                # Добавляем prisma.seed в package.json если его нет
+                # Без этого `npx prisma db seed` молча завершается без ошибок
+                try:
+                    pkg_path = os.path.join(site_path, "package.json")
+                    with open(pkg_path, 'r') as pf:
+                        pkg_data = json.loads(pf.read())
+                    if not pkg_data.get('prisma', {}).get('seed'):
+                        pkg_data.setdefault('prisma', {})['seed'] = 'npx tsx prisma/seed.ts'
+                        with open(pkg_path, 'w') as pf:
+                            json.dump(pkg_data, pf, indent=2, ensure_ascii=False)
+                            pf.write('\n')
+                        steps.append("Добавлен prisma.seed в package.json")
+                except Exception as e:
+                    steps.append(f"prisma.seed: {e}")
+
+                # prisma db seed — заполнение БД начальными/эталонными данными
+                # (пути к картинкам, города, новости, настройки и т.д.)
+                # Seed использует upsert, поэтому повторный запуск безопасен
+                seed_file = os.path.join(site_path, "prisma", "seed.ts")
+                if os.path.exists(seed_file):
+                    # Убеждаемся что tsx установлен (нужен для TypeScript seed)
+                    run_cmd("npm install -g tsx 2>/dev/null", timeout=30)
+                    rc_seed, out_seed, err_seed = run_cmd(
+                        f"cd {site_path} && {env_prefix}npx prisma db seed 2>&1", timeout=120
+                    )
+                    if rc_seed == 0:
+                        steps.append("prisma db seed — OK")
+                    else:
+                        steps.append(f"prisma db seed — предупреждение: {err_seed[:150]}")
+
                 console.print("  [cyan]Сборка проекта (next build)...[/cyan]")
-                # Ограничиваем память Node.js для стабильности
+                # ВАЖНО: Не используем "set -a && source .env" перед build!
+                # Проблема: source .env может вернуть ошибку (спецсимволы в паролях,
+                # строки без =), что ломает среду для последующей команды.
+                # Вместо этого передаём DATABASE_URL напрямую через env.
+                # Next.js сам читает .env файл при build, поэтому нам нужно только
+                # убедиться, что DATABASE_URL доступен для Prisma.
+                # db_url и env_prefix уже определены выше (перед prisma generate)
                 build_cmd = (f"cd {site_path} && "
+                             f"{env_prefix}"
                              f"NODE_OPTIONS='--max-old-space-size=4096' npm run build")
                 rc, out, err = run_cmd(build_cmd, timeout=600)
                 if rc == 0:
@@ -1042,6 +1243,7 @@ class DeployExecutor:
                     if 'Bus error' in err_text or 'core dumped' in err_text or rc == -1:
                         console.print("  [yellow]Build упал (возможно OOM), пробую с 2ГБ лимитом...[/yellow]")
                         build_cmd2 = (f"cd {site_path} && "
+                                      f"{env_prefix}"
                                       f"NODE_OPTIONS='--max-old-space-size=2048' npm run build")
                         rc2, out2, err2 = run_cmd(build_cmd2, timeout=600)
                         if rc2 == 0:
@@ -1059,6 +1261,15 @@ class DeployExecutor:
                 steps.append(".next — уже собран, сборка не нужна")
 
             # Проверяем standalone после сборки
+            # Даже если build вернул ошибку, standalone мог создаться
+            # (npm run build = next build && cp static && cp public)
+            # Если next build прошёл, но cp упал — standalone рабочий!
+            if use_standalone == "yes" and os.path.exists(standalone_path):
+                if has_error:
+                    # Build вернул ошибку, но standalone есть — пробуем запустить
+                    console.print("  [yellow]Build вернул ошибку, но standalone создан — пробую запустить...[/yellow]")
+                    has_error = False  # Сбрасываем, чтобы PM2 запустился
+
             if not has_error and use_standalone == "yes":
                 if os.path.exists(standalone_path):
                     steps.append("standalone server.js — создан")
@@ -1095,6 +1306,41 @@ class DeployExecutor:
                             shutil.copytree(src_static, dst_static)
                         except Exception:
                             pass
+
+                    # Копируем db/ в standalone (SQLite база данных)
+                    # ВАЖНО: НЕ перезаписываем существующие .db файлы!
+                    # На сервере база содержит живые данные (загрузки, сессии и т.д.)
+                    # Если перезаписать — данные потеряются
+                    src_db = os.path.join(site_path, "db")
+                    dst_db = os.path.join(standalone_dir, "db")
+                    if os.path.isdir(src_db):
+                        try:
+                            os.makedirs(dst_db, exist_ok=True)
+                            for item in os.listdir(src_db):
+                                src_item = os.path.join(src_db, item)
+                                dst_item = os.path.join(dst_db, item)
+                                if os.path.isfile(src_item):
+                                    if not os.path.exists(dst_item):
+                                        shutil.copy2(src_item, dst_item)
+                                        steps.append(f"db/{item} скопирован в standalone")
+                                    # Если файл уже есть — НЕ перезаписываем (сохраняем данные)
+                                elif os.path.isdir(src_item):
+                                    if not os.path.isdir(dst_item):
+                                        shutil.copytree(src_item, dst_item)
+                        except Exception as e:
+                            steps.append(f"Копирование db/ в standalone: {e}")
+
+                    # Копируем prisma/ в standalone (схема для prisma generate)
+                    src_prisma = os.path.join(site_path, "prisma")
+                    dst_prisma = os.path.join(standalone_dir, "prisma")
+                    if os.path.isdir(src_prisma):
+                        try:
+                            if os.path.isdir(dst_prisma):
+                                shutil.rmtree(dst_prisma)
+                            shutil.copytree(src_prisma, dst_prisma)
+                            steps.append("prisma/ скопирован в .next/standalone/")
+                        except Exception as e:
+                            steps.append(f"Копирование prisma/ в standalone: {e}")
                 else:
                     steps.append("standalone server.js — НЕ НАЙДЕН, переключаюсь на Standard")
                     self.ctx["use_standalone"] = "no"
@@ -1134,50 +1380,31 @@ class DeployExecutor:
 
         # 5. Запуск PM2 (после сборки!)
         if not has_error:
-            # Снимаем защиту с .env и ecosystem.config.js перед запуском
-            # (они могут быть защищены chattr +i от случайной перезаписи)
-            run_cmd(f"chattr -i {site_path}/.env {site_path}/ecosystem.config.js 2>/dev/null")
-
             # Удаляем старый процесс если есть
             run_cmd(f"pm2 delete {pm2_name} 2>/dev/null")
 
-            # Убеждаемся, что системная переменная HOSTNAME не перезапишет
-            # HOSTNAME из ecosystem.config.js. PM2 не переопределяет
-            # существующие env-переменные при restart, поэтому добавляем
-            # HOSTNAME=0.0.0.0 в systemd-сервис PM2 (если используется systemd)
-            rc_svc, _, _ = run_cmd("systemctl cat pm2-root 2>/dev/null")
-            if rc_svc == 0:
-                rc_grep, _, _ = run_cmd(
-                    "grep 'HOSTNAME=0.0.0.0' /etc/systemd/system/pm2-root.service"
-                )
-                if rc_grep != 0:
-                    run_cmd(
-                        "sed -i '/^Environment=PM2_HOME/a "
-                        "Environment=HOSTNAME=0.0.0.0' "
-                        "/etc/systemd/system/pm2-root.service && "
-                        "systemctl daemon-reload"
-                    )
-                    steps.append("HOSTNAME=0.0.0.0 добавлен в pm2-root.service")
-
-            # Запускаем с HOSTNAME в префиксе чтобы гарантировать привязку
-            # к 0.0.0.0, даже если PM2 проигнорирует env из ecosystem
+            # HOSTNAME=0.0.0.0 — обязательно! Иначе Next.js standalone
+            # слушает только localhost и возвращает 502 через nginx
             rc, out, err = run_cmd(
                 f"cd {site_path} && HOSTNAME=0.0.0.0 HOST=0.0.0.0 "
                 f"pm2 start ecosystem.config.js --update-env"
             )
             if rc == 0:
                 run_cmd("pm2 save")
-
-                # Защищаем критичные файлы от перезаписи (chattr +i)
-                # Это предотвращает случайное изменение нейронкой или скриптами
-                run_cmd(f"chattr +i {site_path}/.env {site_path}/ecosystem.config.js 2>/dev/null")
-                steps.append(".env и ecosystem.config.js защищены (chattr +i)")
-
                 mode_label = self.ctx.get("pm2_mode_label", "Standard")
                 steps.append(f"PM2 запущен ({mode_label})")
             else:
                 steps.append(f"PM2 — ошибка: {err[:150]}")
                 has_error = True
+
+            # Защита .env и ecosystem.config.js от случайного удаления/перезаписи
+            # chattr +i делает файл неизменяемым (даже для root, пока не сделаешь chattr -i)
+            env_path = os.path.join(site_path, ".env")
+            eco_path = os.path.join(site_path, "ecosystem.config.js")
+            for protected_file in [env_path, eco_path]:
+                if os.path.exists(protected_file):
+                    run_cmd(f"chattr +i {protected_file} 2>/dev/null")
+            steps.append("chattr +i защита установлена (.env, ecosystem.config.js)")
 
         msg = "Завершена" if not has_error else "Завершена с ошибками"
         return self._add_result(11, "auto_setup", "Сборка и запуск", not has_error,
@@ -1388,6 +1615,11 @@ class DeployExecutor:
             ])
         else:
             # Пробуем найти db/custom.db (стандартный путь в шаблонах)
+            # Создаём директорию db/ если нет — DATABASE_URL должен указывать
+            # на существующую директорию, иначе Prisma упадёт при migrate
+            db_dir = os.path.join(site_path, "db")
+            os.makedirs(db_dir, exist_ok=True)
+
             db_abs = os.path.join(site_path, "db", "custom.db")
             if not os.path.exists(db_abs):
                 db_abs = os.path.join(site_path, "db", f"{project_name}.db")
@@ -1623,7 +1855,7 @@ function verifySignature(body, signature) {{
   }}
 }}
 
-// Сохраняем .env перед git pull чтобы не потерять настройки
+// Сохраняем .env перед git fetch чтобы не потерять настройки
 function backupEnv() {{
   try {{
     if (fs.existsSync(ENV_FILE)) {{
@@ -1633,14 +1865,14 @@ function backupEnv() {{
   return null;
 }}
 
-// Восстанавливаем .env после git pull если он был изменён
+// Восстанавливаем .env после git reset если он был изменён
 function restoreEnv(originalContent) {{
   try {{
     if (originalContent && fs.existsSync(ENV_FILE)) {{
       const current = fs.readFileSync(ENV_FILE, 'utf8');
       if (current !== originalContent) {{
         fs.writeFileSync(ENV_FILE, originalContent, 'utf8');
-        console.log('[webhook] .env restored after git pull (was overwritten)');
+        console.log('[webhook] .env restored after git reset (was overwritten)');
       }}
     }}
   }} catch (e) {{
@@ -1648,7 +1880,24 @@ function restoreEnv(originalContent) {{
   }}
 }}
 
-// Копируем .env и static в standalone-директорию
+// Добавляем prisma.seed в package.json если его нет
+// Без этого `npx prisma db seed` молча завершается без ошибок
+function ensurePrismaSeed() {{
+  try {{
+    const pkgPath = path.join(SITE_PATH, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    if (!pkg.prisma || !pkg.prisma.seed) {{
+      pkg.prisma = pkg.prisma || {{}};
+      pkg.prisma.seed = 'npx tsx prisma/seed.ts';
+      fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+      console.log('[webhook] Added prisma.seed to package.json');
+    }}
+  }} catch (e) {{
+    console.error('[webhook] Failed to ensure prisma.seed:', e.message);
+  }}
+}}
+
+// Копируем .env, static, db, prisma в standalone-директорию
 function copyToStandalone() {{
   try {{
     const standaloneDir = path.join(SITE_PATH, '.next', 'standalone');
@@ -1664,29 +1913,67 @@ function copyToStandalone() {{
     // Копируем static файлы (CSS, JS, шрифты)
     const staticSrc = path.join(SITE_PATH, '.next', 'static');
     const staticDst = path.join(standaloneDir, '.next', 'static');
-    if (fs.existsSync(staticSrc)) {{
-      fs.cpSync(staticSrc, staticDst, {{ recursive: true, force: true }});
+    if (fs.existsSync(staticSrc) && !fs.existsSync(staticDst)) {{
+      fs.cpSync(staticSrc, staticDst, {{ recursive: true }});
       console.log('[webhook] .next/static copied to standalone');
     }}
-    // Копируем public
+    // Копируем public — без перезаписи существующих файлов
+    // (пользовательские загрузки в standalone/public/uploads/ не трогаем)
     const publicSrc = path.join(SITE_PATH, 'public');
     const publicDst = path.join(standaloneDir, 'public');
     if (fs.existsSync(publicSrc)) {{
-      fs.cpSync(publicSrc, publicDst, {{ recursive: true, force: true }});
-      console.log('[webhook] public copied to standalone');
+      const copyDirNoOverwrite = (src, dst) => {{
+        if (!fs.existsSync(dst)) fs.mkdirSync(dst, {{ recursive: true }});
+        for (const entry of fs.readdirSync(src)) {{
+          const srcPath = path.join(src, entry);
+          const dstPath = path.join(dst, entry);
+          if (fs.statSync(srcPath).isDirectory()) {{
+            copyDirNoOverwrite(srcPath, dstPath);
+          }} else {{
+            if (!fs.existsSync(dstPath)) {{
+              fs.copyFileSync(srcPath, dstPath);
+            }}
+          }}
+        }}
+      }};
+      copyDirNoOverwrite(publicSrc, publicDst);
+      console.log('[webhook] public copied to standalone (no overwrite)');
     }}
-    // db/ (SQLite database)
+    // Копируем db/ (SQLite база данных)
+    // ВАЖНО: НЕ перезаписываем существующие .db файлы!
+    // На сервере база содержит живые данные (загрузки, сессии и т.д.)
     const dbSrc = path.join(SITE_PATH, 'db');
     const dbDst = path.join(standaloneDir, 'db');
     if (fs.existsSync(dbSrc)) {{
-      fs.cpSync(dbSrc, dbDst, {{ recursive: true, force: true }});
-      console.log('[webhook] db/ copied to standalone');
+      if (!fs.existsSync(dbDst)) {{
+        fs.mkdirSync(dbDst, {{ recursive: true }});
+      }}
+      // Копируем только файлы, которых ещё нет в standalone/db/
+      // (не перезаписываем серверную базу данных!)
+      const dbFiles = fs.readdirSync(dbSrc);
+      for (const file of dbFiles) {{
+        const srcFile = path.join(dbSrc, file);
+        const dstFile = path.join(dbDst, file);
+        if (!fs.existsSync(dstFile)) {{
+          if (fs.statSync(srcFile).isDirectory()) {{
+            fs.cpSync(srcFile, dstFile, {{ recursive: true }});
+          }} else {{
+            fs.copyFileSync(srcFile, dstFile);
+          }}
+          console.log(`[webhook] db/${{file}} copied to standalone`);
+        }} else {{
+          console.log(`[webhook] db/${{file}} already exists in standalone, skipping (preserving server data)`);
+        }}
+      }}
     }}
-    // prisma/ (schema + seed)
+    // Копируем prisma/ (схема нужна для prisma generate)
     const prismaSrc = path.join(SITE_PATH, 'prisma');
     const prismaDst = path.join(standaloneDir, 'prisma');
     if (fs.existsSync(prismaSrc)) {{
-      fs.cpSync(prismaSrc, prismaDst, {{ recursive: true, force: true }});
+      if (!fs.existsSync(prismaDst)) {{
+        fs.mkdirSync(prismaDst, {{ recursive: true }});
+      }}
+      fs.cpSync(prismaSrc, prismaDst, {{ recursive: true }});
       console.log('[webhook] prisma/ copied to standalone');
     }}
   }} catch (e) {{
@@ -1705,7 +1992,7 @@ function runCmd(cmd, label, callback) {{
       console.log(`[webhook] ${{label}} OK`);
       if (stdout && stdout.length < 500) console.log(`[webhook] ${{label}} output:`, stdout.trim());
     }}
-    callback(err, stdout ? stdout.trim() : '');
+    callback(err);
   }});
 }}
 
@@ -1739,88 +2026,168 @@ const server = http.createServer((req, res) => {{
           return;
         }}
 
-        // 1. Бэкапим .env и запоминаем текущий коммит (для отката)
+        // 1. Бэкапим .env
         const envBackup = backupEnv();
-        let currentCommit = '';
 
-        runCmd(`cd ${{SITE_PATH}} && git rev-parse HEAD 2>/dev/null`, 'save current commit', (saveErr, saveOut) => {{
-          if (!saveErr && saveOut) currentCommit = saveOut.trim();
-          console.log(`[webhook] Current commit: ${{currentCommit || 'unknown'}}`);
+        // 2. Запоминаем текущий коммит для отката при ошибке сборки
+        runCmd(`cd ${{SITE_PATH}} && git rev-parse HEAD`, 'get current commit', (revErr, revStdout) => {{
+          const prevCommit = revStdout ? revStdout.trim() : '';
 
-          // 2. Синхронизация: fetch + reset --hard (без конфликтов!)
-          // Сначала отменяем любой незавершённый merge, потом подтягиваем и хард-резетим
-          const syncCmd = `cd ${{SITE_PATH}} && chattr -i .env ecosystem.config.js 2>/dev/null; git merge --abort 2>/dev/null; git fetch origin ${{GIT_BRANCH}} 2>&1 && git reset --hard origin/${{GIT_BRANCH}} 2>&1`;
-          runCmd(syncCmd, 'git sync (fetch+reset)', (syncErr, syncOut) => {{
-            // 3. Восстанавливаем .env если git его перезаписал
+          // 2a. Бэкапим public/uploads/ ДО git reset — чтобы не потерять
+          // пользовательские загрузки (логотип, favicon, файлы из админки)
+          let uploadsBackup = null;
+          const uploadsDir = path.join(SITE_PATH, 'public', 'uploads');
+          if (fs.existsSync(uploadsDir)) {{
+            try {{
+              uploadsBackup = path.join(SITE_PATH, 'tmp', 'uploads_webhook_backup');
+              if (fs.existsSync(uploadsBackup)) fs.rmSync(uploadsBackup, {{ recursive: true }});
+              fs.cpSync(uploadsDir, uploadsBackup, {{ recursive: true }});
+              console.log('[webhook] public/uploads/ backed up before git reset');
+            }} catch (e) {{
+              console.error('[webhook] Failed to backup uploads:', e.message);
+              uploadsBackup = null;
+            }}
+          }}
+
+          // 3. git fetch + git reset --hard (вместо git pull — не создаёт конфликтов)
+          runCmd(`cd ${{SITE_PATH}} && git fetch origin ${{GIT_BRANCH}} 2>&1 && git reset --hard origin/${{GIT_BRANCH}} 2>&1`, 'git fetch + reset', (pullErr) => {{
+            // 3a. Убираем db/, .env, public/uploads/ из git tracking
+            // Это страховка: даже если нейронка случайно закоммитила .env, db/ или uploads/,
+            // мы убираем их из отслеживания (файлы остаются на диске)
+            runCmd(`cd ${{SITE_PATH}} && git rm -r --cached db/ 2>/dev/null; git rm --cached .env .env.local .env.production 2>/dev/null; git rm -r --cached public/uploads/ 2>/dev/null; true`, 'ensure db/, .env, uploads untracked', () => {{}});
+
+            // 3b. Восстанавливаем public/uploads/ из бэкапа
+            // git reset --hard мог удалить пользовательские загрузки
+            if (uploadsBackup && fs.existsSync(uploadsBackup)) {{
+              try {{
+                // Копируем файлы которых нет в public/uploads/ (не перезаписываем новые)
+                const restoreDir = (src, dst) => {{
+                  if (!fs.existsSync(dst)) fs.mkdirSync(dst, {{ recursive: true }});
+                  for (const entry of fs.readdirSync(src)) {{
+                    const srcPath = path.join(src, entry);
+                    const dstPath = path.join(dst, entry);
+                    if (fs.statSync(srcPath).isDirectory()) {{
+                      restoreDir(srcPath, dstPath);
+                    }} else {{
+                      if (!fs.existsSync(dstPath)) {{
+                        fs.copyFileSync(srcPath, dstPath);
+                      }}
+                    }}
+                  }}
+                }};
+                restoreDir(uploadsBackup, uploadsDir);
+                console.log('[webhook] public/uploads/ restored from backup');
+              }} catch (e) {{
+                console.error('[webhook] Failed to restore uploads:', e.message);
+              }}
+            }}
+
+            // 4. Восстанавливаем .env если git его перезаписал
             restoreEnv(envBackup);
 
-            if (syncErr) {{
-              console.error('[webhook] Aborting: git sync failed');
+            if (pullErr) {{
+              console.error('[webhook] Aborting: git fetch/reset failed');
               return;
             }}
 
-            // 4. npm install
+            // 4a. Читаем DATABASE_URL из .env для передачи в prisma и build
+            // Не используем source .env — он ломается на спецсимволах в паролях
+            const dbUrlLine = fs.existsSync(ENV_FILE)
+              ? fs.readFileSync(ENV_FILE, 'utf8').split('\\n').find(l => l.startsWith('DATABASE_URL='))
+              : null;
+            const dbUrlValue = dbUrlLine ? dbUrlLine.split('=').slice(1).join('=').trim().replace(/^["']|["']$/g, '') : '';
+            const dbEnvPrefix = dbUrlValue ? `DATABASE_URL='${{dbUrlValue}}' ` : '';
+
+            // 5. npm install
             runCmd(`cd ${{SITE_PATH}} && npm install --legacy-peer-deps 2>&1`, 'npm install', (npmErr) => {{
               if (npmErr) {{
                 console.error('[webhook] Aborting: npm install failed');
-                // Откат на предыдущий коммит
-                if (currentCommit) {{
-                  console.log(`[webhook] Rolling back to ${{currentCommit}}`);
-                  runCmd(`cd ${{SITE_PATH}} && git reset --hard ${{currentCommit}} 2>&1`, 'rollback', () => {{}});
-                }}
                 return;
               }}
 
-              // 5. prisma generate (required before build)
-              runCmd(`cd ${SITE_PATH} && npx prisma generate 2>&1`, 'prisma generate', (prismaErr) => {
-                if (prismaErr) {
-                  console.error('[webhook] prisma generate failed, but continuing with build...');
-                }
-
-              // 6. next build with DATABASE_URL exported from .env
-              runCmd(`cd ${{SITE_PATH}} && set -a && source <(grep -v '^#' .env | grep -v '^$') && set +a && NODE_OPTIONS='--max-old-space-size=4096' npx next build 2>&1`, 'next build', (buildErr) => {{
-                if (buildErr) {{
-                  console.error('[webhook] Build failed! Rolling back...');
-                  // Откат на предыдущий рабочий коммит
-                  if (currentCommit) {{
-                    console.log(`[webhook] Rolling back to ${{currentCommit}}`);
-                    runCmd(`cd ${{SITE_PATH}} && git reset --hard ${{currentCommit}} 2>&1`, 'rollback', (rbErr) => {{
-                      if (rbErr) {{
-                        console.error('[webhook] Rollback failed!');
-                      }} else {{
-                        console.log('[webhook] Rollback OK, restarting old version');
-                        // Копируем .env и static в standalone
-                        copyToStandalone();
-                        // Перезапускаем PM2
-                        const pm2Cmd = `cd ${{SITE_PATH}} && HOSTNAME=0.0.0.0 HOST=0.0.0.0 pm2 delete ${{PROJECT}} 2>/dev/null; HOSTNAME=0.0.0.0 HOST=0.0.0.0 pm2 start ecosystem.config.js --update-env 2>&1`;
-                        runCmd(pm2Cmd, 'pm2 restart after rollback', (pm2Err) => {{}});
+              // 6. prisma generate + migrate deploy (если есть prisma схема)
+              // ВАЖНО: используем migrate deploy, а НЕ migrate dev!
+              // migrate dev может пересоздать БД и удалить данные!
+              // migrate deploy только применяет новые миграции без потери данных
+              const hasPrisma = fs.existsSync(path.join(SITE_PATH, 'prisma', 'schema.prisma'));
+              if (hasPrisma) {{
+                runCmd(`cd ${{SITE_PATH}} && ${{dbEnvPrefix}}npx prisma generate 2>&1`, 'prisma generate', (prismaErr) => {{
+                  if (prismaErr) {{
+                    console.warn('[webhook] prisma generate failed (non-fatal):', prismaErr.message);
+                  }}
+                  // prisma migrate deploy — безопасно, только применяет ожидающие миграции
+                  const hasMigrations = fs.existsSync(path.join(SITE_PATH, 'prisma', 'migrations'));
+                  if (hasMigrations) {{
+                    runCmd(`cd ${{SITE_PATH}} && ${{dbEnvPrefix}}npx prisma migrate deploy 2>&1`, 'prisma migrate deploy', (migrateErr) => {{
+                      if (migrateErr) {{
+                        console.warn('[webhook] prisma migrate deploy failed:', migrateErr.message);
                       }}
+                      doBuild(prevCommit);
                     }});
                   }} else {{
-                    console.error('[webhook] No previous commit to rollback to');
+                    doBuild(prevCommit);
                   }}
-                  return;
-                }}
-
-                // 7. Копируем .env, static, public, db, prisma в standalone
-                copyToStandalone();
-
-                // 8. pm2 delete + start (не restart! restart не обновляет env,
-                //    и системный $HOSTNAME перезапишет HOSTNAME из ecosystem.config.js)
-                const pm2Cmd = `cd ${{SITE_PATH}} && HOSTNAME=0.0.0.0 HOST=0.0.0.0 pm2 delete ${{PROJECT}} 2>/dev/null; HOSTNAME=0.0.0.0 HOST=0.0.0.0 pm2 start ecosystem.config.js --update-env 2>&1`;
-                runCmd(pm2Cmd, 'pm2 restart', (pm2Err) => {{
-                  if (pm2Err) {{
-                    console.error('[webhook] pm2 restart failed');
-                  }} else {{
-                    // Защищаем критичные файлы после успешного деплоя
-                    runCmd(`chattr +i ${{SITE_PATH}}/.env ${{SITE_PATH}}/ecosystem.config.js 2>/dev/null`, 'protect files', () => {{}});
-                    console.log('[webhook] Deploy completed successfully');
-                  }}
-                }});  // end pm2 restart
-              }});  // end next build
-            }});  // end prisma generate
+                }});
+              }} else {{
+                doBuild(prevCommit);
+              }}
+            }});
           }});
         }});
+
+        function doBuild(prevCommit) {{
+          // 7. next build
+          // DATABASE_URL уже прочитан выше (dbEnvPrefix), используем его
+          runCmd(`cd ${{SITE_PATH}} && ${{dbEnvPrefix}}NODE_OPTIONS='--max-old-space-size=4096' npx next build 2>&1`, 'next build', (buildErr) => {{
+            if (buildErr) {{
+              console.error('[webhook] Build failed!');
+              // Откатываемся на предыдущий коммит при ошибке сборки
+              if (prevCommit) {{
+                console.log('[webhook] Rolling back to previous commit:', prevCommit);
+                runCmd(`cd ${{SITE_PATH}} && git reset --hard ${{prevCommit}} 2>&1`, 'rollback', () => {{
+                  restoreEnv(envBackup);
+                  console.log('[webhook] Rolled back to:', prevCommit);
+                }});
+              }}
+              return;
+            }}
+
+            // 8. Добавляем prisma.seed в package.json если нет
+            ensurePrismaSeed();
+
+            // 9. Копируем .env, static, db, prisma в standalone
+            copyToStandalone();
+
+            // 10. prisma db seed — заполнение БД начальными данными
+            // (пути к картинкам /seed-images/..., города, новости и т.д.)
+            // Не критично если seed уже был запущен ранее
+            const hasSeedFile = fs.existsSync(path.join(SITE_PATH, 'prisma', 'seed.ts'));
+            if (hasSeedFile) {{
+              runCmd(`cd ${{SITE_PATH}} && ${{dbEnvPrefix}}npx prisma db seed 2>&1`, 'prisma db seed', (seedErr) => {{
+                if (seedErr) {{
+                  console.warn('[webhook] prisma db seed warning (non-fatal):', seedErr.message);
+                }}
+                startPm2();
+              }});
+            }} else {{
+              startPm2();
+            }}
+
+            function startPm2() {{
+              // 11. pm2 delete + start (вместо restart — надёжнее, обновляет env)
+              runCmd(`pm2 delete ${{PROJECT}} 2>/dev/null; cd ${{SITE_PATH}} && HOSTNAME=0.0.0.0 HOST=0.0.0.0 pm2 start ecosystem.config.js --update-env 2>&1`, 'pm2 delete + start', (pm2Err) => {{
+                if (pm2Err) {{
+                  console.error('[webhook] pm2 start failed');
+                }} else {{
+                  runCmd('pm2 save', 'pm2 save', () => {{}});
+                  // Защита критичных файлов от случайной перезаписи
+                  runCmd(`chattr +i ${{SITE_PATH}}/.env ${{SITE_PATH}}/ecosystem.config.js 2>/dev/null`, 'protect files', () => {{}});
+                  console.log('[webhook] Deploy completed successfully');
+                }}
+              }});
+            }}
+          }});
+        }}
 
         res.writeHead(200, {{'Content-Type': 'application/json'}});
         res.end(JSON.stringify({{ status: 'ok', message: 'Deploy started' }}));
