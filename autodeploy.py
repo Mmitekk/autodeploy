@@ -478,10 +478,14 @@ class DeployExecutor:
             if 'apache' in out.lower() or 'httpd' in out.lower():
                 return "apache"
         # Fallback: наличие директорий
-        if os.path.isdir("/etc/nginx/sites-enabled"):
+        if os.path.isdir("/etc/nginx/sites-enabled") or os.path.isdir("/etc/nginx/conf.d"):
             return "nginx"
         if os.path.isdir("/etc/apache2/sites-enabled"):
             return "apache"
+        # Проверяем установлен ли nginx
+        rc, _, _ = run_cmd("which nginx 2>/dev/null")
+        if rc == 0:
+            return "nginx"
         return "unknown"
 
     def _config_has_proxy(self, config_path: str, port: int) -> bool:
@@ -497,10 +501,21 @@ class DeployExecutor:
 
     def _update_nginx_config(self, domain: str, site_path: str, app_port: int) -> BlockResult:
         """Создаёт или обновляет конфиг Nginx."""
+        # Определяем структуру директорий nginx (Debian vs RHEL/Alma)
         nginx_sites = "/etc/nginx/sites-available"
         nginx_enabled = "/etc/nginx/sites-enabled"
+        nginx_conf_d = "/etc/nginx/conf.d"
+        use_conf_d = False
 
-        config_path = os.path.join(nginx_sites, domain)
+        # На RHEL/Alma Linux нет sites-available, используется conf.d/
+        if not os.path.isdir(nginx_sites) and os.path.isdir(nginx_conf_d):
+            use_conf_d = True
+
+        # Имя файла: в conf.d нужен суффикс .conf
+        if use_conf_d:
+            config_path = os.path.join(nginx_conf_d, f"{domain}.conf")
+        else:
+            config_path = os.path.join(nginx_sites, domain)
         existing_proxy = False
 
         if os.path.exists(config_path):
@@ -541,14 +556,15 @@ class DeployExecutor:
         try:
             with open(config_path, 'w') as f:
                 f.write(vhost)
-            # Создаём симлинк
-            enabled_link = os.path.join(nginx_enabled, domain)
-            if not os.path.exists(enabled_link):
-                run_cmd(f"ln -sf {config_path} {enabled_link}")
-            # Удаляем default если мешает
-            default_conf = os.path.join(nginx_enabled, "default")
-            if os.path.exists(default_conf):
-                run_cmd(f"mv {default_conf} {default_conf}.bak 2>/dev/null")
+            # Создаём симлинк (только для Debian-структуры)
+            if not use_conf_d:
+                enabled_link = os.path.join(nginx_enabled, domain)
+                if not os.path.exists(enabled_link):
+                    run_cmd(f"ln -sf {config_path} {enabled_link}")
+                # Удаляем default если мешает
+                default_conf = os.path.join(nginx_enabled, "default")
+                if os.path.exists(default_conf):
+                    run_cmd(f"mv {default_conf} {default_conf}.bak 2>/dev/null")
 
             # Для длинных доменов (Punycode) увеличиваем hash_bucket_size
             # Иначе nginx не сможет обработать server_name: "could not build
@@ -712,7 +728,7 @@ class DeployExecutor:
             result = self._update_apache_config(domain, site_path, app_port)
         else:
             # Не определили — пробуем оба
-            if os.path.isdir("/etc/nginx/sites-available"):
+            if os.path.isdir("/etc/nginx/sites-available") or os.path.isdir("/etc/nginx/conf.d"):
                 result = self._update_nginx_config(domain, site_path, app_port)
             elif os.path.isdir("/etc/apache2/sites-available"):
                 result = self._update_apache_config(domain, site_path, app_port)
@@ -857,7 +873,6 @@ class DeployExecutor:
             "",
             "# Server",
             f"HOST=0.0.0.0",
-            f"HOSTNAME=0.0.0.0",  # ВАЖНО: переопределяет системный $HOSTNAME (иначе PM2 подставит имя хоста)
             f"PORT={app_port}",
         ]
 
@@ -1119,6 +1134,10 @@ class DeployExecutor:
 
         # 5. Запуск PM2 (после сборки!)
         if not has_error:
+            # Снимаем защиту с .env и ecosystem.config.js перед запуском
+            # (они могут быть защищены chattr +i от случайной перезаписи)
+            run_cmd(f"chattr -i {site_path}/.env {site_path}/ecosystem.config.js 2>/dev/null")
+
             # Удаляем старый процесс если есть
             run_cmd(f"pm2 delete {pm2_name} 2>/dev/null")
 
@@ -1128,7 +1147,7 @@ class DeployExecutor:
             # HOSTNAME=0.0.0.0 в systemd-сервис PM2 (если используется systemd)
             rc_svc, _, _ = run_cmd("systemctl cat pm2-root 2>/dev/null")
             if rc_svc == 0:
-                rc_grep, grep_out, _ = run_cmd(
+                rc_grep, _, _ = run_cmd(
                     "grep 'HOSTNAME=0.0.0.0' /etc/systemd/system/pm2-root.service"
                 )
                 if rc_grep != 0:
@@ -1148,6 +1167,12 @@ class DeployExecutor:
             )
             if rc == 0:
                 run_cmd("pm2 save")
+
+                # Защищаем критичные файлы от перезаписи (chattr +i)
+                # Это предотвращает случайное изменение нейронкой или скриптами
+                run_cmd(f"chattr +i {site_path}/.env {site_path}/ecosystem.config.js 2>/dev/null")
+                steps.append(".env и ecosystem.config.js защищены (chattr +i)")
+
                 mode_label = self.ctx.get("pm2_mode_label", "Standard")
                 steps.append(f"PM2 запущен ({mode_label})")
             else:
@@ -1348,7 +1373,6 @@ class DeployExecutor:
             "",
             "# Server",
             f"HOST=0.0.0.0",
-            f"HOSTNAME=0.0.0.0",  # ВАЖНО: переопределяет системный $HOSTNAME
             f"PORT={app_port}",
         ]
 
@@ -1599,7 +1623,7 @@ function verifySignature(body, signature) {{
   }}
 }}
 
-// Сохраняем .env перед синхронизацией чтобы не потерять настройки
+// Сохраняем .env перед git pull чтобы не потерять настройки
 function backupEnv() {{
   try {{
     if (fs.existsSync(ENV_FILE)) {{
@@ -1609,14 +1633,14 @@ function backupEnv() {{
   return null;
 }}
 
-// Восстанавливаем .env после синхронизации если он был изменён
+// Восстанавливаем .env после git pull если он был изменён
 function restoreEnv(originalContent) {{
   try {{
     if (originalContent && fs.existsSync(ENV_FILE)) {{
       const current = fs.readFileSync(ENV_FILE, 'utf8');
       if (current !== originalContent) {{
         fs.writeFileSync(ENV_FILE, originalContent, 'utf8');
-        console.log('[webhook] .env restored after git sync (was overwritten)');
+        console.log('[webhook] .env restored after git pull (was overwritten)');
       }}
     }}
   }} catch (e) {{
@@ -1637,19 +1661,33 @@ function copyToStandalone() {{
       fs.copyFileSync(ENV_FILE, path.join(standaloneDir, '.env'));
       console.log('[webhook] .env copied to .next/standalone/');
     }}
-    // Копируем static файлы (CSS, JS, шрифты) — всегда перезаписываем
+    // Копируем static файлы (CSS, JS, шрифты)
     const staticSrc = path.join(SITE_PATH, '.next', 'static');
     const staticDst = path.join(standaloneDir, '.next', 'static');
     if (fs.existsSync(staticSrc)) {{
       fs.cpSync(staticSrc, staticDst, {{ recursive: true, force: true }});
       console.log('[webhook] .next/static copied to standalone');
     }}
-    // Копируем public — всегда перезаписываем
+    // Копируем public
     const publicSrc = path.join(SITE_PATH, 'public');
     const publicDst = path.join(standaloneDir, 'public');
     if (fs.existsSync(publicSrc)) {{
       fs.cpSync(publicSrc, publicDst, {{ recursive: true, force: true }});
       console.log('[webhook] public copied to standalone');
+    }}
+    // db/ (SQLite database)
+    const dbSrc = path.join(SITE_PATH, 'db');
+    const dbDst = path.join(standaloneDir, 'db');
+    if (fs.existsSync(dbSrc)) {{
+      fs.cpSync(dbSrc, dbDst, {{ recursive: true, force: true }});
+      console.log('[webhook] db/ copied to standalone');
+    }}
+    // prisma/ (schema + seed)
+    const prismaSrc = path.join(SITE_PATH, 'prisma');
+    const prismaDst = path.join(standaloneDir, 'prisma');
+    if (fs.existsSync(prismaSrc)) {{
+      fs.cpSync(prismaSrc, prismaDst, {{ recursive: true, force: true }});
+      console.log('[webhook] prisma/ copied to standalone');
     }}
   }} catch (e) {{
     console.error('[webhook] Failed to copy to standalone:', e.message);
@@ -1667,7 +1705,7 @@ function runCmd(cmd, label, callback) {{
       console.log(`[webhook] ${{label}} OK`);
       if (stdout && stdout.length < 500) console.log(`[webhook] ${{label}} output:`, stdout.trim());
     }}
-    callback(err);
+    callback(err, stdout ? stdout.trim() : '');
   }});
 }}
 
@@ -1701,47 +1739,86 @@ const server = http.createServer((req, res) => {{
           return;
         }}
 
-        // 1. Бэкапим .env
+        // 1. Бэкапим .env и запоминаем текущий коммит (для отката)
         const envBackup = backupEnv();
+        let currentCommit = '';
 
-        // 2. Синхронизация: fetch + reset --hard (без конфликтов!)
-        // Сначала отменяем любой незавершённый merge, потом подтягиваем и хард-резетим
-        const syncCmd = `cd ${{SITE_PATH}} && git merge --abort 2>/dev/null; git fetch origin ${{GIT_BRANCH}} 2>&1 && git reset --hard origin/${{GIT_BRANCH}} 2>&1`;
-        runCmd(syncCmd, 'git sync (fetch+reset)', (syncErr) => {{
-          // 3. Восстанавливаем .env если git его перезаписал
-          restoreEnv(envBackup);
+        runCmd(`cd ${{SITE_PATH}} && git rev-parse HEAD 2>/dev/null`, 'save current commit', (saveErr, saveOut) => {{
+          if (!saveErr && saveOut) currentCommit = saveOut.trim();
+          console.log(`[webhook] Current commit: ${{currentCommit || 'unknown'}}`);
 
-          if (syncErr) {{
-            console.error('[webhook] Aborting: git sync failed');
-            return;
-          }}
+          // 2. Синхронизация: fetch + reset --hard (без конфликтов!)
+          // Сначала отменяем любой незавершённый merge, потом подтягиваем и хард-резетим
+          const syncCmd = `cd ${{SITE_PATH}} && chattr -i .env ecosystem.config.js 2>/dev/null; git merge --abort 2>/dev/null; git fetch origin ${{GIT_BRANCH}} 2>&1 && git reset --hard origin/${{GIT_BRANCH}} 2>&1`;
+          runCmd(syncCmd, 'git sync (fetch+reset)', (syncErr, syncOut) => {{
+            // 3. Восстанавливаем .env если git его перезаписал
+            restoreEnv(envBackup);
 
-          // 4. npm install
-          runCmd(`cd ${{SITE_PATH}} && npm install --legacy-peer-deps 2>&1`, 'npm install', (npmErr) => {{
-            if (npmErr) {{
-              console.error('[webhook] Aborting: npm install failed');
+            if (syncErr) {{
+              console.error('[webhook] Aborting: git sync failed');
               return;
             }}
 
-            // 5. next build
-            runCmd(`cd ${{SITE_PATH}} && NODE_OPTIONS='--max-old-space-size=4096' npx next build 2>&1`, 'next build', (buildErr) => {{
-              if (buildErr) {{
-                console.error('[webhook] Build failed, NOT restarting');
+            // 4. npm install
+            runCmd(`cd ${{SITE_PATH}} && npm install --legacy-peer-deps 2>&1`, 'npm install', (npmErr) => {{
+              if (npmErr) {{
+                console.error('[webhook] Aborting: npm install failed');
+                // Откат на предыдущий коммит
+                if (currentCommit) {{
+                  console.log(`[webhook] Rolling back to ${{currentCommit}}`);
+                  runCmd(`cd ${{SITE_PATH}} && git reset --hard ${{currentCommit}} 2>&1`, 'rollback', () => {{}});
+                }}
                 return;
               }}
 
-              // 6. Копируем .env и static в standalone
-              copyToStandalone();
+              // 5. prisma generate (required before build)
+              runCmd(`cd ${SITE_PATH} && npx prisma generate 2>&1`, 'prisma generate', (prismaErr) => {
+                if (prismaErr) {
+                  console.error('[webhook] prisma generate failed, but continuing with build...');
+                }
 
-              // 7. pm2 restart с обновлением env
-              runCmd(`pm2 restart ${{PROJECT}} --update-env 2>&1`, 'pm2 restart', (pm2Err) => {{
-                if (pm2Err) {{
-                  console.error('[webhook] pm2 restart failed');
-                }} else {{
-                  console.log('[webhook] Deploy completed successfully');
+              // 6. next build with DATABASE_URL exported from .env
+              runCmd(`cd ${{SITE_PATH}} && set -a && source <(grep -v '^#' .env | grep -v '^$') && set +a && NODE_OPTIONS='--max-old-space-size=4096' npx next build 2>&1`, 'next build', (buildErr) => {{
+                if (buildErr) {{
+                  console.error('[webhook] Build failed! Rolling back...');
+                  // Откат на предыдущий рабочий коммит
+                  if (currentCommit) {{
+                    console.log(`[webhook] Rolling back to ${{currentCommit}}`);
+                    runCmd(`cd ${{SITE_PATH}} && git reset --hard ${{currentCommit}} 2>&1`, 'rollback', (rbErr) => {{
+                      if (rbErr) {{
+                        console.error('[webhook] Rollback failed!');
+                      }} else {{
+                        console.log('[webhook] Rollback OK, restarting old version');
+                        // Копируем .env и static в standalone
+                        copyToStandalone();
+                        // Перезапускаем PM2
+                        const pm2Cmd = `cd ${{SITE_PATH}} && HOSTNAME=0.0.0.0 HOST=0.0.0.0 pm2 delete ${{PROJECT}} 2>/dev/null; HOSTNAME=0.0.0.0 HOST=0.0.0.0 pm2 start ecosystem.config.js --update-env 2>&1`;
+                        runCmd(pm2Cmd, 'pm2 restart after rollback', (pm2Err) => {{}});
+                      }}
+                    }});
+                  }} else {{
+                    console.error('[webhook] No previous commit to rollback to');
+                  }}
+                  return;
                 }}
-              }});
-            }});
+
+                // 7. Копируем .env, static, public, db, prisma в standalone
+                copyToStandalone();
+
+                // 8. pm2 delete + start (не restart! restart не обновляет env,
+                //    и системный $HOSTNAME перезапишет HOSTNAME из ecosystem.config.js)
+                const pm2Cmd = `cd ${{SITE_PATH}} && HOSTNAME=0.0.0.0 HOST=0.0.0.0 pm2 delete ${{PROJECT}} 2>/dev/null; HOSTNAME=0.0.0.0 HOST=0.0.0.0 pm2 start ecosystem.config.js --update-env 2>&1`;
+                runCmd(pm2Cmd, 'pm2 restart', (pm2Err) => {{
+                  if (pm2Err) {{
+                    console.error('[webhook] pm2 restart failed');
+                  }} else {{
+                    // Защищаем критичные файлы после успешного деплоя
+                    runCmd(`chattr +i ${{SITE_PATH}}/.env ${{SITE_PATH}}/ecosystem.config.js 2>/dev/null`, 'protect files', () => {{}});
+                    console.log('[webhook] Deploy completed successfully');
+                  }}
+                }});  // end pm2 restart
+              }});  // end next build
+            }});  // end prisma generate
           }});
         }});
 
