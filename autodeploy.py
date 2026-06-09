@@ -1913,31 +1913,40 @@ function copyToStandalone() {{
     // Копируем static файлы (CSS, JS, шрифты)
     const staticSrc = path.join(SITE_PATH, '.next', 'static');
     const staticDst = path.join(standaloneDir, '.next', 'static');
-    if (fs.existsSync(staticSrc) && !fs.existsSync(staticDst)) {{
+    if (fs.existsSync(staticSrc)) {{
+      // Всегда перезаписываем static — при rebuild хэши файлов меняются!
+      if (fs.existsSync(staticDst)) fs.rmSync(staticDst, {{ recursive: true, force: true }});
       fs.cpSync(staticSrc, staticDst, {{ recursive: true }});
       console.log('[webhook] .next/static copied to standalone');
     }}
-    // Копируем public — без перезаписи существующих файлов
-    // (пользовательские загрузки в standalone/public/uploads/ не трогаем)
+    // Копируем public — git-файлы перезаписываем, uploads — нет
+    // seed-images/, favicon и т.д. приходят из git и должны обновляться
+    // public/uploads/ — серверные файлы, не перезаписываем
     const publicSrc = path.join(SITE_PATH, 'public');
     const publicDst = path.join(standaloneDir, 'public');
     if (fs.existsSync(publicSrc)) {{
-      const copyDirNoOverwrite = (src, dst) => {{
+      const copyPublicDir = (src, dst) => {{
         if (!fs.existsSync(dst)) fs.mkdirSync(dst, {{ recursive: true }});
         for (const entry of fs.readdirSync(src)) {{
           const srcPath = path.join(src, entry);
           const dstPath = path.join(dst, entry);
           if (fs.statSync(srcPath).isDirectory()) {{
-            copyDirNoOverwrite(srcPath, dstPath);
-          }} else {{
-            if (!fs.existsSync(dstPath)) {{
-              fs.copyFileSync(srcPath, dstPath);
+            if (entry === 'uploads') {{
+              // uploads — не перезаписываем существующие файлы
+              copyPublicDir(srcPath, dstPath);
+            }} else {{
+              // seed-images и другие директории — перезаписываем
+              if (fs.existsSync(dstPath)) fs.rmSync(dstPath, {{ recursive: true, force: true }});
+              fs.cpSync(srcPath, dstPath, {{ recursive: true }});
             }}
+          }} else {{
+            // Файлы в корне public/ (favicon, logo и т.д.) — перезаписываем
+            fs.copyFileSync(srcPath, dstPath);
           }}
         }}
       }};
-      copyDirNoOverwrite(publicSrc, publicDst);
-      console.log('[webhook] public copied to standalone (no overwrite)');
+      copyPublicDir(publicSrc, publicDst);
+      console.log('[webhook] public copied to standalone (uploads preserved, git files updated)');
     }}
     // Копируем db/ (SQLite база данных)
     // ВАЖНО: НЕ перезаписываем существующие .db файлы!
@@ -1992,7 +2001,7 @@ function runCmd(cmd, label, callback) {{
       console.log(`[webhook] ${{label}} OK`);
       if (stdout && stdout.length < 500) console.log(`[webhook] ${{label}} output:`, stdout.trim());
     }}
-    callback(err);
+    callback(err, stdout ? stdout.trim() : '');
   }});
 }}
 
