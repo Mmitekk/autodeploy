@@ -528,16 +528,51 @@ class DeployExecutor:
         else:
             nginx_enabled = None
         existing_proxy = False
+        has_ssl = False
 
         if os.path.exists(config_path):
             existing_proxy = self._config_has_proxy(config_path, app_port)
+            # Проверяем, есть ли SSL-секция от certbot — если да, не перезаписываем!
+            try:
+                with open(config_path, 'r') as f:
+                    existing_content = f.read()
+                has_ssl = 'listen 443 ssl' in existing_content or 'listen [::]:443 ssl' in existing_content
+            except Exception:
+                pass
 
-        if existing_proxy:
+        if existing_proxy and has_ssl:
             return self._add_result(6, "web_server", "Конфигурация веб-сервера", True,
-                                    f"Nginx: конфиг уже настроен ({config_path})",
+                                    f"Nginx: конфиг уже настроен с SSL ({config_path})",
                                     f"Прокси на порт {app_port}")
 
-        # Создаём / перезаписываем конфиг
+        if existing_proxy and not has_ssl:
+            # Прокси есть, но порт мог измениться — обновляем только proxy_pass
+            import re
+            new_content = re.sub(
+                r'proxy_pass http://127\.0\.0\.1:\d+',
+                f'proxy_pass http://127.0.0.1:{app_port}',
+                existing_content
+            )
+            # Обновляем alias для static
+            new_content = re.sub(
+                r'alias /var/www/[^;]+/\.next/static/',
+                f'alias {site_path}/.next/static/',
+                new_content
+            )
+            try:
+                with open(config_path, 'w') as f:
+                    f.write(new_content)
+                rc_test, _, test_err = run_cmd("nginx -t 2>&1")
+                if rc_test == 0:
+                    run_cmd("systemctl reload nginx")
+                return self._add_result(6, "web_server", "Конфигурация веб-сервера", True,
+                                        f"Nginx: конфиг обновлён ({config_path})",
+                                        f"Прокси на порт {app_port}")
+            except Exception as e:
+                return self._add_result(6, "web_server", "Конфигурация веб-сервера", False,
+                                        f"Ошибка обновления конфига: {e}")
+
+        # Создаём конфиг с нуля (SSL добавит certbot позже)
         vhost = f"""server {{
     listen 80;
     server_name {domain} www.{domain};
