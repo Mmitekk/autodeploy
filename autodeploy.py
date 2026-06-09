@@ -2108,20 +2108,20 @@ const server = http.createServer((req, res) => {{
                       if (migrateErr) {{
                         console.warn('[webhook] prisma migrate deploy failed:', migrateErr.message);
                       }}
-                      doBuild(prevCommit);
+                      doBuild(prevCommit, dbEnvPrefix);
                     }});
                   }} else {{
-                    doBuild(prevCommit);
+                    doBuild(prevCommit, dbEnvPrefix);
                   }}
                 }});
               }} else {{
-                doBuild(prevCommit);
+                doBuild(prevCommit, dbEnvPrefix);
               }}
             }});
           }});
         }});
 
-        function doBuild(prevCommit) {{
+        function doBuild(prevCommit, dbEnvPrefix) {{
           // 7. next build
           // DATABASE_URL уже прочитан выше (dbEnvPrefix), используем его
           runCmd(`cd ${{SITE_PATH}} && ${{dbEnvPrefix}}NODE_OPTIONS='--max-old-space-size=4096' npx next build 2>&1`, 'next build', (buildErr) => {{
