@@ -2049,6 +2049,10 @@ const server = http.createServer((req, res) => {{
             }}
           }}
 
+          // 2z. Снимаем chattr +i и удаляем .next перед git fetch
+          // Без rm -rf .next: next build падает с EPERM если .next/standalone/.env защищён chattr +i
+          runCmd(`cd ${{SITE_PATH}} && chattr -i .env ecosystem.config.js .next/standalone/.env 2>/dev/null; rm -rf .next`, 'chattr -i + rm .next', () => {{}});
+
           // 3. git fetch + git reset --hard (вместо git pull — не создаёт конфликтов)
           runCmd(`cd ${{SITE_PATH}} && git fetch origin ${{GIT_BRANCH}} 2>&1 && git reset --hard origin/${{GIT_BRANCH}} 2>&1`, 'git fetch + reset', (pullErr) => {{
             // 3a. Убираем db/, .env, public/uploads/ из git tracking
