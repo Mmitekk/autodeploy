@@ -1148,22 +1148,6 @@ class DeployExecutor:
                 db_dir = os.path.join(site_path, "db")
                 os.makedirs(db_dir, exist_ok=True)
 
-                # Читаем DATABASE_URL из .env для передачи в prisma и build
-                # ВАЖНО: Не используем "source .env" — ломается на спецсимволах!
-                db_url = ""
-                env_path_check = os.path.join(site_path, ".env")
-                if os.path.exists(env_path_check):
-                    try:
-                        with open(env_path_check, 'r') as ef:
-                            for line in ef:
-                                line = line.strip()
-                                if line.startswith('DATABASE_URL='):
-                                    db_url = line.split('=', 1)[1].strip().strip('"').strip("'")
-                                    break
-                    except Exception:
-                        pass
-                env_prefix = f"DATABASE_URL='{db_url}' " if db_url else ""
-
                 # prisma generate + migrate deploy — если есть prisma/schema.prisma
                 prisma_schema = os.path.join(site_path, "prisma", "schema.prisma")
                 if os.path.exists(prisma_schema):
@@ -1193,36 +1177,6 @@ class DeployExecutor:
                         else:
                             steps.append(f"prisma migrate deploy — ошибка: {err_pm[:150]}")
 
-                # Добавляем prisma.seed в package.json если его нет
-                # Без этого `npx prisma db seed` молча завершается без ошибок
-                try:
-                    pkg_path = os.path.join(site_path, "package.json")
-                    with open(pkg_path, 'r') as pf:
-                        pkg_data = json.loads(pf.read())
-                    if not pkg_data.get('prisma', {}).get('seed'):
-                        pkg_data.setdefault('prisma', {})['seed'] = 'npx tsx prisma/seed.ts'
-                        with open(pkg_path, 'w') as pf:
-                            json.dump(pkg_data, pf, indent=2, ensure_ascii=False)
-                            pf.write('\n')
-                        steps.append("Добавлен prisma.seed в package.json")
-                except Exception as e:
-                    steps.append(f"prisma.seed: {e}")
-
-                # prisma db seed — заполнение БД начальными/эталонными данными
-                # (пути к картинкам, города, новости, настройки и т.д.)
-                # Seed использует upsert, поэтому повторный запуск безопасен
-                seed_file = os.path.join(site_path, "prisma", "seed.ts")
-                if os.path.exists(seed_file):
-                    # Убеждаемся что tsx установлен (нужен для TypeScript seed)
-                    run_cmd("npm install -g tsx 2>/dev/null", timeout=30)
-                    rc_seed, out_seed, err_seed = run_cmd(
-                        f"cd {site_path} && {env_prefix}npx prisma db seed 2>&1", timeout=120
-                    )
-                    if rc_seed == 0:
-                        steps.append("prisma db seed — OK")
-                    else:
-                        steps.append(f"prisma db seed — предупреждение: {err_seed[:150]}")
-
                 console.print("  [cyan]Сборка проекта (next build)...[/cyan]")
                 # ВАЖНО: Не используем "set -a && source .env" перед build!
                 # Проблема: source .env может вернуть ошибку (спецсимволы в паролях,
@@ -1230,7 +1184,21 @@ class DeployExecutor:
                 # Вместо этого передаём DATABASE_URL напрямую через env.
                 # Next.js сам читает .env файл при build, поэтому нам нужно только
                 # убедиться, что DATABASE_URL доступен для Prisma.
-                # db_url и env_prefix уже определены выше (перед prisma generate)
+                db_url = ""
+                env_path_check = os.path.join(site_path, ".env")
+                if os.path.exists(env_path_check):
+                    try:
+                        with open(env_path_check, 'r') as ef:
+                            for line in ef:
+                                line = line.strip()
+                                if line.startswith('DATABASE_URL='):
+                                    # Убираем кавычки из значения
+                                    db_url = line.split('=', 1)[1].strip().strip('"').strip("'")
+                                    break
+                    except Exception:
+                        pass
+
+                env_prefix = f"DATABASE_URL='{db_url}' " if db_url else ""
                 build_cmd = (f"cd {site_path} && "
                              f"{env_prefix}"
                              f"NODE_OPTIONS='--max-old-space-size=4096' npm run build")
@@ -1801,13 +1769,13 @@ class DeployExecutor:
         # Переиспользуем секрет и порт если они были
         if existing_secret:
             secret = existing_secret
-            self.log(f"Переиспользуем существующий webhook secret")
+            console.print(f"  [cyan]Переиспользуем существующий webhook secret[/cyan]")
         else:
             secret = generate_password(24)
         if existing_webhook_port and existing_webhook_port not in self.used_ports:
             webhook_port = existing_webhook_port
             self.used_ports.add(webhook_port)
-            self.log(f"Переиспользуем существующий webhook порт: {webhook_port}")
+            console.print(f"  [cyan]Переиспользуем существующий webhook порт: {webhook_port}[/cyan]")
 
         # Сохраняем секрет и порт в .env.webhook
         try:
@@ -1880,23 +1848,6 @@ function restoreEnv(originalContent) {{
   }}
 }}
 
-// Добавляем prisma.seed в package.json если его нет
-// Без этого `npx prisma db seed` молча завершается без ошибок
-function ensurePrismaSeed() {{
-  try {{
-    const pkgPath = path.join(SITE_PATH, 'package.json');
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    if (!pkg.prisma || !pkg.prisma.seed) {{
-      pkg.prisma = pkg.prisma || {{}};
-      pkg.prisma.seed = 'npx tsx prisma/seed.ts';
-      fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
-      console.log('[webhook] Added prisma.seed to package.json');
-    }}
-  }} catch (e) {{
-    console.error('[webhook] Failed to ensure prisma.seed:', e.message);
-  }}
-}}
-
 // Копируем .env, static, db, prisma в standalone-директорию
 function copyToStandalone() {{
   try {{
@@ -1913,40 +1864,31 @@ function copyToStandalone() {{
     // Копируем static файлы (CSS, JS, шрифты)
     const staticSrc = path.join(SITE_PATH, '.next', 'static');
     const staticDst = path.join(standaloneDir, '.next', 'static');
-    if (fs.existsSync(staticSrc)) {{
-      // Всегда перезаписываем static — при rebuild хэши файлов меняются!
-      if (fs.existsSync(staticDst)) fs.rmSync(staticDst, {{ recursive: true, force: true }});
+    if (fs.existsSync(staticSrc) && !fs.existsSync(staticDst)) {{
       fs.cpSync(staticSrc, staticDst, {{ recursive: true }});
       console.log('[webhook] .next/static copied to standalone');
     }}
-    // Копируем public — git-файлы перезаписываем, uploads — нет
-    // seed-images/, favicon и т.д. приходят из git и должны обновляться
-    // public/uploads/ — серверные файлы, не перезаписываем
+    // Копируем public — без перезаписи существующих файлов
+    // (пользовательские загрузки в standalone/public/uploads/ не трогаем)
     const publicSrc = path.join(SITE_PATH, 'public');
     const publicDst = path.join(standaloneDir, 'public');
     if (fs.existsSync(publicSrc)) {{
-      const copyPublicDir = (src, dst) => {{
+      const copyDirNoOverwrite = (src, dst) => {{
         if (!fs.existsSync(dst)) fs.mkdirSync(dst, {{ recursive: true }});
         for (const entry of fs.readdirSync(src)) {{
           const srcPath = path.join(src, entry);
           const dstPath = path.join(dst, entry);
           if (fs.statSync(srcPath).isDirectory()) {{
-            if (entry === 'uploads') {{
-              // uploads — не перезаписываем существующие файлы
-              copyPublicDir(srcPath, dstPath);
-            }} else {{
-              // seed-images и другие директории — перезаписываем
-              if (fs.existsSync(dstPath)) fs.rmSync(dstPath, {{ recursive: true, force: true }});
-              fs.cpSync(srcPath, dstPath, {{ recursive: true }});
-            }}
+            copyDirNoOverwrite(srcPath, dstPath);
           }} else {{
-            // Файлы в корне public/ (favicon, logo и т.д.) — перезаписываем
-            fs.copyFileSync(srcPath, dstPath);
+            if (!fs.existsSync(dstPath)) {{
+              fs.copyFileSync(srcPath, dstPath);
+            }}
           }}
         }}
       }};
-      copyPublicDir(publicSrc, publicDst);
-      console.log('[webhook] public copied to standalone (uploads preserved, git files updated)');
+      copyDirNoOverwrite(publicSrc, publicDst);
+      console.log('[webhook] public copied to standalone (no overwrite)');
     }}
     // Копируем db/ (SQLite база данных)
     // ВАЖНО: НЕ перезаписываем существующие .db файлы!
@@ -2001,7 +1943,7 @@ function runCmd(cmd, label, callback) {{
       console.log(`[webhook] ${{label}} OK`);
       if (stdout && stdout.length < 500) console.log(`[webhook] ${{label}} output:`, stdout.trim());
     }}
-    callback(err, stdout ? stdout.trim() : '');
+    callback(err);
   }});
 }}
 
@@ -2057,10 +1999,6 @@ const server = http.createServer((req, res) => {{
               uploadsBackup = null;
             }}
           }}
-
-          // 2z. Снимаем chattr +i и удаляем .next перед git fetch
-          // Без rm -rf .next: next build падает с EPERM если .next/standalone/.env защищён chattr +i
-          runCmd(`cd ${{SITE_PATH}} && chattr -i .env ecosystem.config.js .next/standalone/.env 2>/dev/null; rm -rf .next`, 'chattr -i + rm .next', () => {{}});
 
           // 3. git fetch + git reset --hard (вместо git pull — не создаёт конфликтов)
           runCmd(`cd ${{SITE_PATH}} && git fetch origin ${{GIT_BRANCH}} 2>&1 && git reset --hard origin/${{GIT_BRANCH}} 2>&1`, 'git fetch + reset', (pullErr) => {{
@@ -2165,40 +2103,18 @@ const server = http.createServer((req, res) => {{
               return;
             }}
 
-            // 8. Добавляем prisma.seed в package.json если нет
-            ensurePrismaSeed();
-
-            // 9. Копируем .env, static, db, prisma в standalone
+            // 8. Копируем .env, static, db, prisma в standalone
             copyToStandalone();
 
-            // 10. prisma db seed — заполнение БД начальными данными
-            // (пути к картинкам /seed-images/..., города, новости и т.д.)
-            // Не критично если seed уже был запущен ранее
-            const hasSeedFile = fs.existsSync(path.join(SITE_PATH, 'prisma', 'seed.ts'));
-            if (hasSeedFile) {{
-              runCmd(`cd ${{SITE_PATH}} && ${{dbEnvPrefix}}npx prisma db seed 2>&1`, 'prisma db seed', (seedErr) => {{
-                if (seedErr) {{
-                  console.warn('[webhook] prisma db seed warning (non-fatal):', seedErr.message);
-                }}
-                startPm2();
-              }});
-            }} else {{
-              startPm2();
-            }}
-
-            function startPm2() {{
-              // 11. pm2 delete + start (вместо restart — надёжнее, обновляет env)
-              runCmd(`pm2 delete ${{PROJECT}} 2>/dev/null; cd ${{SITE_PATH}} && HOSTNAME=0.0.0.0 HOST=0.0.0.0 pm2 start ecosystem.config.js --update-env 2>&1`, 'pm2 delete + start', (pm2Err) => {{
-                if (pm2Err) {{
-                  console.error('[webhook] pm2 start failed');
-                }} else {{
-                  runCmd('pm2 save', 'pm2 save', () => {{}});
-                  // Защита критичных файлов от случайной перезаписи
-                  runCmd(`chattr +i ${{SITE_PATH}}/.env ${{SITE_PATH}}/ecosystem.config.js 2>/dev/null`, 'protect files', () => {{}});
-                  console.log('[webhook] Deploy completed successfully');
-                }}
-              }});
-            }}
+            // 9. pm2 delete + start (вместо restart — надёжнее, обновляет env)
+            runCmd(`pm2 delete ${{PROJECT}} 2>/dev/null; cd ${{SITE_PATH}} && HOSTNAME=0.0.0.0 HOST=0.0.0.0 pm2 start ecosystem.config.js --update-env 2>&1`, 'pm2 delete + start', (pm2Err) => {{
+              if (pm2Err) {{
+                console.error('[webhook] pm2 start failed');
+              }} else {{
+                runCmd('pm2 save', 'pm2 save', () => {{}});
+                console.log('[webhook] Deploy completed successfully');
+              }}
+            }});
           }});
         }}
 
@@ -2304,7 +2220,7 @@ process.on('unhandledRejection', (e) => {{
                         f"https://api.github.com/repos/{repo_name}/hooks/{dup_id}",
                         timeout=5
                     )
-                    self.log(f"Удалён устаревший webhook #{dup_id}")
+                    console.print(f"  [dim]Удалён устаревший webhook #{dup_id}[/dim]")
 
                 if hook_exists:
                     webhook_details += f"\nWebhook URL: {webhook_url}"
