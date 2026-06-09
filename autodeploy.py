@@ -1183,6 +1183,23 @@ class DeployExecutor:
                 db_dir = os.path.join(site_path, "db")
                 os.makedirs(db_dir, exist_ok=True)
 
+                # Вычисляем env_prefix (DATABASE_URL) для Prisma и next build
+                # ВАЖНО: вычисляем ДО prisma generate, чтобы переменная была доступна
+                db_url = ""
+                env_path_check = os.path.join(site_path, ".env")
+                if os.path.exists(env_path_check):
+                    try:
+                        with open(env_path_check, 'r') as ef:
+                            for line in ef:
+                                line = line.strip()
+                                if line.startswith('DATABASE_URL='):
+                                    db_url = line.split('=', 1)[1].strip().strip('"').strip("'")
+                                    break
+                    except Exception:
+                        pass
+
+                env_prefix = f"DATABASE_URL='{db_url}' " if db_url else ""
+
                 # prisma generate + migrate deploy — если есть prisma/schema.prisma
                 prisma_schema = os.path.join(site_path, "prisma", "schema.prisma")
                 if os.path.exists(prisma_schema):
@@ -1213,27 +1230,7 @@ class DeployExecutor:
                             steps.append(f"prisma migrate deploy — ошибка: {err_pm[:150]}")
 
                 console.print("  [cyan]Сборка проекта (next build)...[/cyan]")
-                # ВАЖНО: Не используем "set -a && source .env" перед build!
-                # Проблема: source .env может вернуть ошибку (спецсимволы в паролях,
-                # строки без =), что ломает среду для последующей команды.
-                # Вместо этого передаём DATABASE_URL напрямую через env.
-                # Next.js сам читает .env файл при build, поэтому нам нужно только
-                # убедиться, что DATABASE_URL доступен для Prisma.
-                db_url = ""
-                env_path_check = os.path.join(site_path, ".env")
-                if os.path.exists(env_path_check):
-                    try:
-                        with open(env_path_check, 'r') as ef:
-                            for line in ef:
-                                line = line.strip()
-                                if line.startswith('DATABASE_URL='):
-                                    # Убираем кавычки из значения
-                                    db_url = line.split('=', 1)[1].strip().strip('"').strip("'")
-                                    break
-                    except Exception:
-                        pass
-
-                env_prefix = f"DATABASE_URL='{db_url}' " if db_url else ""
+                # env_prefix уже вычислен выше (перед prisma generate)
                 build_cmd = (f"cd {site_path} && "
                              f"{env_prefix}"
                              f"NODE_OPTIONS='--max-old-space-size=4096' npm run build")
