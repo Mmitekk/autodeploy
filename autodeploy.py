@@ -1811,7 +1811,9 @@ class DeployExecutor:
             secret = existing_secret
             console.print(f"  [cyan]Переиспользуем существующий webhook secret[/cyan]")
         else:
-            secret = generate_password(24)
+            # Webhook secret: только буквенно-цифровые символы и -, _
+            # Спецсимволы (!@#$%^&*) могут ломать JS-строку в webhook-server.js
+            secret = ''.join(random.choice(string.ascii_letters + string.digits + '-_') for _ in range(32))
         if existing_webhook_port and existing_webhook_port not in self.used_ports:
             # Проверяем, что порт реально свободен в системе
             # (может быть занят другим сайтом, если .env.webhook устарел)
@@ -2058,9 +2060,8 @@ const server = http.createServer((req, res) => {{
           // 3. Снимаем immutable-атрибут (chattr +i) перед git reset
           // autodeploy.py устанавливает chattr +i на .env и ecosystem.config.js
           // чтобы защитить их от перезаписи при git reset --hard
-          runCmd(`chattr -R -i ${{SITE_PATH}}/ 2>/dev/null`, 'chattr -R -i (remove immutable)', () => {{
-          // 4. git fetch + git reset --hard (вместо git pull — не создаёт конфликтов)
-          runCmd(`cd ${{SITE_PATH}} && git fetch origin ${{GIT_BRANCH}} 2>&1 && git reset --hard origin/${{GIT_BRANCH}} 2>&1`, 'git fetch + reset', (pullErr) => {{
+          // chattr -R -i + git fetch + git reset — одной командой
+          runCmd(`cd ${{SITE_PATH}} && chattr -R -i ${{SITE_PATH}}/ 2>/dev/null; git fetch origin ${{GIT_BRANCH}} 2>&1 && git reset --hard origin/${{GIT_BRANCH}} 2>&1`, 'chattr -R -i + git fetch + reset', (pullErr) => {{
             // 3a. Убираем db/, .env, public/uploads/ из git tracking
             // Это страховка: даже если нейронка случайно закоммитила .env, db/ или uploads/,
             // мы убираем их из отслеживания (файлы остаются на диске)
