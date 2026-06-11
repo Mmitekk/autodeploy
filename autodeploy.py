@@ -449,6 +449,8 @@ class DeployExecutor:
 }};
 """
         ecosystem_path = os.path.join(site_path, "ecosystem.config.js")
+        # Снимаем immutable-атрибут, если установлен (chattr +i от предыдущего деплоя)
+        run_cmd(f"chattr -i {ecosystem_path} 2>/dev/null")
         try:
             os.makedirs(os.path.dirname(ecosystem_path), exist_ok=True)
             with open(ecosystem_path, 'w') as f:
@@ -1006,6 +1008,8 @@ class DeployExecutor:
         env = '\n'.join(env_lines) + '\n'
 
         try:
+            # Снимаем immutable-атрибут, если установлен (chattr +i от предыдущего деплоя)
+            run_cmd(f"chattr -i {env_path} 2>/dev/null")
             os.makedirs(os.path.dirname(env_path), exist_ok=True)
             with open(env_path, 'w') as f:
                 f.write(env)
@@ -1374,6 +1378,8 @@ class DeployExecutor:
 }};
 """
                     eco_path = os.path.join(site_path, "ecosystem.config.js")
+                    # Снимаем immutable-атрибут, если установлен
+                    run_cmd(f"chattr -i {eco_path} 2>/dev/null")
                     with open(eco_path, 'w') as f:
                         f.write(eco_content)
                     steps.append("ecosystem.config.js пересоздан для Standard")
@@ -1673,6 +1679,8 @@ class DeployExecutor:
                 env_lines.append(f"{k}={v}")
 
         try:
+            # Снимаем immutable-атрибут, если установлен
+            run_cmd(f"chattr -i {env_path} 2>/dev/null")
             with open(env_path, 'w') as f:
                 f.write('\n'.join(env_lines) + '\n')
             console.print("  [green].env восстановлен после git pull[/green]")
@@ -1805,9 +1813,24 @@ class DeployExecutor:
         else:
             secret = generate_password(24)
         if existing_webhook_port and existing_webhook_port not in self.used_ports:
-            webhook_port = existing_webhook_port
-            self.used_ports.add(webhook_port)
-            console.print(f"  [cyan]Переиспользуем существующий webhook порт: {webhook_port}[/cyan]")
+            # Проверяем, что порт реально свободен в системе
+            # (может быть занят другим сайтом, если .env.webhook устарел)
+            port_is_free = True
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(1)
+                s.bind(('0.0.0.0', existing_webhook_port))
+                s.close()
+            except (OSError, socket.error):
+                port_is_free = False
+
+            if port_is_free:
+                webhook_port = existing_webhook_port
+                self.used_ports.add(webhook_port)
+                console.print(f"  [cyan]Переиспользуем существующий webhook порт: {webhook_port}[/cyan]")
+            else:
+                console.print(f"  [yellow]Существующий webhook порт {existing_webhook_port} занят, назначается новый[/yellow]")
+                self.used_ports.add(webhook_port)  # webhook_port уже назначен через find_free_port выше
 
         # Сохраняем секрет и порт в .env.webhook
         try:
