@@ -250,6 +250,62 @@ class DeployExecutor:
         # PM2-имя: безопасный ASCII-слаг (кириллица ломает PM2)
         pm2_name = slugify_name(project_name)
 
+        # ── Проверка конфликтов PM2 и «похожих» директорий ──────────────
+        # Если PM2-процесс с таким именем уже существует, но указывает
+        # на другую директорию (например, /var/www/git.be1st.pro вместо
+        # /var/www/git-be1st.pro), нужно его пересоздать.
+        # Это случается когда: домен содержит точку → slugify заменяет на дефис,
+        # но старая директория (с точкой) тоже существует.
+        _pm2_conflict_fixed = False
+        try:
+            rc_pm2, out_pm2, _ = run_cmd(f"pm2 describe {pm2_name} 2>/dev/null")
+            if rc_pm2 == 0 and out_pm2:
+                # Ищем exec cwd в выводе pm2 describe
+                import re as _re
+                _cwd_match = _re.search(r'exec cwd\s+│\s+(\S+)', out_pm2)
+                if _cwd_match:
+                    _existing_cwd = _cwd_match.group(1).rstrip('/')
+                    _expected_cwd = site_path.rstrip('/')
+                    if _existing_cwd != _expected_cwd:
+                        console.print(
+                            f"  [yellow]⚠ Конфликт PM2: процесс '{pm2_name}' "
+                            f"указывает на {_existing_cwd}, а сайт — на {_expected_cwd}[/yellow]"
+                        )
+                        console.print(
+                            f"  [cyan]Удаляю конфликтующий PM2-процесс...[/cyan]"
+                        )
+                        run_cmd(f"pm2 delete {pm2_name} 2>/dev/null")
+                        run_cmd(f"pm2 delete {pm2_name}-webhook 2>/dev/null")
+                        run_cmd("pm2 save 2>/dev/null")
+                        _pm2_conflict_fixed = True
+                        console.print(
+                            f"  [green]Конфликтующий PM2-процесс удалён[/green]"
+                        )
+        except Exception:
+            pass
+
+        # Проверяем «похожие» директории (точка ↔ дефис)
+        # git.be1st.pro ↔ git-be1st.pro — разные пути, одинаковый PM2-слаг
+        _similar_dirs = []
+        _site_basename = os.path.basename(site_path.rstrip('/'))
+        for _variant in [_site_basename.replace('.', '-'), _site_basename.replace('-', '.')]:
+            _variant_path = os.path.join(os.path.dirname(site_path.rstrip('/')), _variant)
+            if _variant_path.rstrip('/') != site_path.rstrip('/') and os.path.isdir(_variant_path):
+                _similar_dirs.append(_variant_path)
+        if _similar_dirs:
+            console.print(
+                f"  [yellow]⚠ Обнаружены директории с похожими именами:[/yellow]"
+            )
+            for _sd in _similar_dirs:
+                console.print(f"  [yellow]  • {_sd}[/yellow]")
+            console.print(
+                f"  [yellow]PM2-слаг у них одинаковый ({pm2_name}) — "
+                f"это может вызывать конфликты![/yellow]"
+            )
+            console.print(
+                f"  [yellow]Рекомендуется удалить неиспользуемую директорию.[/yellow]"
+            )
+
         if os.path.exists(site_path):
             self.ctx["site_path"] = site_path
             self.ctx["project_name"] = project_name
@@ -1386,8 +1442,37 @@ class DeployExecutor:
 
         # 5. Запуск PM2 (после сборки!)
         if not has_error:
-            # Удаляем старый процесс если есть
+            # Удаляем старый процесс если есть (и сайт, и webhook)
             run_cmd(f"pm2 delete {pm2_name} 2>/dev/null")
+            run_cmd(f"pm2 delete {pm2_name}-webhook 2>/dev/null")
+
+            # Проверяем: нет ли PM2-процесса с тем же именем из другой директории?
+            # (случается когда домен содержит точку: git.be1st.pro → slug git-be1st-pro,
+            #  но ранее был создан сайт /var/www/git.be1st.pro с тем же PM2-слагом)
+            try:
+                rc_check, out_check, _ = run_cmd(f"pm2 describe {pm2_name} 2>/dev/null")
+                if rc_check == 0 and out_check:
+                    import re as _re
+                    _cwd_match = _re.search(r'exec cwd\s+│\s+(\S+)', out_check)
+                    if _cwd_match:
+                        _existing_cwd = _cwd_match.group(1).rstrip('/')
+                        _expected_cwd = site_path.rstrip('/')
+                        if _existing_cwd != _expected_cwd:
+                            console.print(
+                                f"  [yellow]⚠ PM2 конфликт: процесс '{pm2_name}' "
+                                f"указывает на {_existing_cwd}, а нужно {_expected_cwd}[/yellow]"
+                            )
+                            console.print(
+                                f"  [cyan]Удаляю конфликтующие процессы...[/cyan]"
+                            )
+                            run_cmd(f"pm2 delete {pm2_name} 2>/dev/null")
+                            run_cmd(f"pm2 delete {pm2_name}-webhook 2>/dev/null")
+                            run_cmd("pm2 save 2>/dev/null")
+                            console.print(
+                                f"  [green]Конфликтующие процессы удалены[/green]"
+                            )
+            except Exception:
+                pass
 
             # HOSTNAME=0.0.0.0 — обязательно! Иначе Next.js standalone
             # слушает только localhost и возвращает 502 через nginx
@@ -2236,6 +2321,24 @@ process.on('unhandledRejection', (e) => {{
             # Удаляем старый webhook процесс если есть
             webhook_pm2_name = f"{pm2_name}-webhook"
             run_cmd(f"pm2 delete {webhook_pm2_name} 2>/dev/null")
+
+            # Также проверяем и удаляем основной PM2-процесс если он
+            # указывает на другую директорию (конфликт точка ↔ дефис)
+            try:
+                rc_chk, out_chk, _ = run_cmd(f"pm2 describe {pm2_name} 2>/dev/null")
+                if rc_chk == 0 and out_chk:
+                    import re as _re
+                    _m = _re.search(r'exec cwd\s+│\s+(\S+)', out_chk)
+                    if _m and _m.group(1).rstrip('/') != site_path.rstrip('/'):
+                        console.print(
+                            f"  [yellow]⚠ Webhook: PM2 '{pm2_name}' указывает на "
+                            f"{_m.group(1)}, а нужно {site_path}. Удаляю...[/yellow]"
+                        )
+                        run_cmd(f"pm2 delete {pm2_name} 2>/dev/null")
+                        run_cmd(f"pm2 delete {webhook_pm2_name} 2>/dev/null")
+                        run_cmd("pm2 save 2>/dev/null")
+            except Exception:
+                pass
 
             rc, out, err = run_cmd(
                 f"cd {site_path} && pm2 start webhook-server.js "
