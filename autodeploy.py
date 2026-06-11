@@ -2055,7 +2055,11 @@ const server = http.createServer((req, res) => {{
             }}
           }}
 
-          // 3. git fetch + git reset --hard (вместо git pull — не создаёт конфликтов)
+          // 3. Снимаем immutable-атрибут (chattr +i) перед git reset
+          // autodeploy.py устанавливает chattr +i на .env и ecosystem.config.js
+          // чтобы защитить их от перезаписи при git reset --hard
+          runCmd(`chattr -R -i ${{SITE_PATH}}/ 2>/dev/null`, 'chattr -R -i (remove immutable)', () => {{
+          // 4. git fetch + git reset --hard (вместо git pull — не создаёт конфликтов)
           runCmd(`cd ${{SITE_PATH}} && git fetch origin ${{GIT_BRANCH}} 2>&1 && git reset --hard origin/${{GIT_BRANCH}} 2>&1`, 'git fetch + reset', (pullErr) => {{
             // 3a. Убираем db/, .env, public/uploads/ из git tracking
             // Это страховка: даже если нейронка случайно закоммитила .env, db/ или uploads/,
@@ -2150,7 +2154,7 @@ const server = http.createServer((req, res) => {{
               // Откатываемся на предыдущий коммит при ошибке сборки
               if (prevCommit) {{
                 console.log('[webhook] Rolling back to previous commit:', prevCommit);
-                runCmd(`cd ${{SITE_PATH}} && git reset --hard ${{prevCommit}} 2>&1`, 'rollback', () => {{
+                runCmd(`chattr -R -i ${{SITE_PATH}}/ 2>/dev/null; cd ${{SITE_PATH}} && git reset --hard ${{prevCommit}} 2>&1`, 'rollback', () => {{
                   restoreEnv(envBackup);
                   console.log('[webhook] Rolled back to:', prevCommit);
                 }});
@@ -2167,6 +2171,15 @@ const server = http.createServer((req, res) => {{
                 console.error('[webhook] pm2 start failed');
               }} else {{
                 runCmd('pm2 save', 'pm2 save', () => {{}});
+                // Восстанавливаем immutable-защиту на .env и ecosystem.config.js
+                // (как autodeploy.py делает в блоке 11 после деплоя)
+                const envPath = path.join(SITE_PATH, '.env');
+                const ecoPath = path.join(SITE_PATH, 'ecosystem.config.js');
+                for (const f of [envPath, ecoPath]) {{
+                  if (fs.existsSync(f)) {{
+                    runCmd(`chattr +i ${{f}} 2>/dev/null`, 'chattr +i (restore protection)', () => {{}});
+                  }}
+                }}
                 console.log('[webhook] Deploy completed successfully');
               }}
             }});
