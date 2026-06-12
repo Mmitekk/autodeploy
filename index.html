@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Развертывание нейросайта — Инструкция</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230c0f1a'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='sans-serif' font-weight='800' font-size='20' fill='%236c5ce7'%3EA%3C/text%3E%3C/svg%3E">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0c0f1a; --surface: #141827; --surface-2: #1a1f35; --surface-3: #222845;
+    --border: #2a3055; --text: #e4e8f7; --text-muted: #8891b5;
+    --accent: #6c5ce7; --accent-light: #a29bfe; --accent-glow: rgba(108, 92, 231, 0.25);
+    --green: #00b894; --green-glow: rgba(0, 184, 148, 0.2);
+    --orange: #fdcb6e; --red: #ff7675; --blue: #74b9ff;
+    --radius: 12px; --radius-sm: 8px;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.7; min-height: 100vh; }
+
+  .hero { position: relative; padding: 60px 24px 40px; text-align: center; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: -40%; left: 50%; transform: translateX(-50%); width: 800px; height: 800px; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+  .hero-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
+  .hero-badge { display: inline-block; background: var(--surface-2); border: 1px solid var(--border); border-radius: 100px; padding: 6px 20px; font-size: 13px; color: var(--accent-light); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; }
+  .hero h1 { font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 800; background: linear-gradient(135deg, #fff 0%, var(--accent-light) 50%, var(--green) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 12px; line-height: 1.2; }
+  .hero-logo { margin-bottom: 18px; }
+  .hero-logo svg { height: 40px; width: auto; filter: drop-shadow(0 0 20px rgba(237, 24, 73, 0.3)); }
+  .hero p { font-size: 1.05rem; color: var(--text-muted); max-width: 620px; margin: 0 auto; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+
+  .tabs-wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+  .tabs-nav { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+  .tab-btn { background: none; border: none; color: var(--text-muted); font-family: var(--font); font-size: 0.95rem; font-weight: 600; padding: 14px 24px; cursor: pointer; position: relative; transition: color 0.25s; }
+  .tab-btn::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent); border-radius: 2px 2px 0 0; transform: scaleX(0); transition: transform 0.25s; }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent-light); }
+  .tab-btn.active::after { transform: scaleX(1); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .nav { position: sticky; top: 0; z-index: 50; background: rgba(12, 15, 26, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); padding: 12px 24px; }
+  .nav-inner { max-width: 920px; margin: 0 auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .nav a { color: var(--text-muted); text-decoration: none; padding: 6px 14px; border-radius: 100px; font-size: 0.82rem; font-weight: 500; transition: all 0.2s; border: 1px solid transparent; }
+  .nav a:hover { color: var(--accent-light); border-color: var(--accent); background: var(--accent-glow); }
+
+  .container { max-width: 920px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  .step { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 32px; margin-bottom: 28px; transition: border-color 0.3s; }
+  .step:hover { border-color: var(--accent); }
+  .step::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; border-radius: var(--radius) 0 0 var(--radius); }
+  .step[data-color="purple"]::before { background: var(--accent); }
+  .step[data-color="green"]::before  { background: var(--green); }
+  .step[data-color="orange"]::before { background: var(--orange); }
+  .step[data-color="blue"]::before   { background: var(--blue); }
+  .step[data-color="red"]::before    { background: var(--red); }
+  .step-header { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  .step-number { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; font-weight: 800; font-size: 1.2rem; flex-shrink: 0; }
+  .step[data-color="purple"] .step-number { background: var(--accent); color: #fff; }
+  .step[data-color="green"]  .step-number { background: var(--green);  color: #fff; }
+  .step[data-color="orange"] .step-number { background: var(--orange); color: #1a1f35; }
+  .step[data-color="blue"]   .step-number { background: var(--blue);   color: #1a1f35; }
+  .step[data-color="red"]    .step-number { background: var(--red);    color: #fff; }
+  .step-title { font-size: 1.3rem; font-weight: 700; }
+  .step-subtitle { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+  .step-body p { margin-bottom: 12px; color: var(--text); line-height: 1.75; }
+  .step-body p:last-child { margin-bottom: 0; }
+
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px; vertical-align: middle; }
+  .tag-auto  { background: var(--green-glow); color: var(--green); }
+  .tag-manual { background: var(--accent-glow); color: var(--accent-light); }
+
+  .code-block { background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px; margin: 12px 0; overflow-x: auto; font-family: var(--font-mono); font-size: 0.88rem; line-height: 1.6; color: #c9d1d9; }
+  .code-block .comment { color: #6a737d; }
+  .code-block .prompt  { color: var(--green); }
+  .code-block .input   { color: var(--orange); font-weight: 600; }
+  .code-label { display: inline-block; background: var(--surface-3); border: 1px solid var(--border); border-radius: 6px 6px 0 0; padding: 4px 12px; font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted); margin-bottom: -1px; position: relative; z-index: 1; }
+  .code-label + .code-block { border-radius: 0 var(--radius-sm) var(--radius-sm) var(--radius-sm); }
+
+  .substeps { list-style: none; padding: 0; margin: 12px 0; }
+  .substeps li { position: relative; padding: 12px 16px 12px 52px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 10px; line-height: 1.65; }
+  .substeps li::before { content: attr(data-num); position: absolute; left: 14px; top: 12px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; border-radius: 50%; font-size: 0.8rem; font-weight: 700; }
+  .substeps li strong { color: var(--accent-light); }
+  .substeps li code { background: #0d1117; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85em; color: var(--orange); }
+
+  .info-box { padding: 14px 18px; border-radius: var(--radius-sm); margin: 12px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .info-box.tip { background: rgba(0, 184, 148, 0.08); border: 1px solid rgba(0, 184, 148, 0.25); }
+  .info-box.warning { background: rgba(253, 203, 110, 0.08); border: 1px solid rgba(253, 203, 110, 0.25); }
+  .info-box.info { background: rgba(116, 185, 255, 0.08); border: 1px solid rgba(116, 185, 255, 0.25); }
+  .info-box.success { background: rgba(0, 184, 148, 0.08); border: 1px solid rgba(0, 184, 148, 0.25); }
+  .info-box.error { background: rgba(255, 118, 117, 0.08); border: 1px solid rgba(255, 118, 117, 0.25); }
+  .info-box .icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+  .info-box.tip .icon, .info-box.success .icon { color: var(--green); }
+  .info-box.warning .icon { color: var(--orange); }
+  .info-box.info .icon { color: var(--blue); }
+  .info-box.error .icon { color: var(--red); }
+  .info-box p { margin: 0; font-size: 0.92rem; line-height: 1.65; }
+  .info-box p strong { color: var(--text); }
+
+  .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid var(--border); background: #0a0e14; margin: 12px 0; }
+  .video-wrapper video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin: 14px 0; }
+  .summary-table th { background: var(--surface-3); color: var(--text); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  .summary-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: var(--surface-2); }
+  .summary-table .td-num { color: var(--accent-light); font-weight: 700; width: 40px; }
+  .summary-table .td-block { color: var(--text); }
+  .summary-table .td-status { width: 80px; }
+  .status-ok { display: inline-block; background: var(--green-glow); color: var(--green); padding: 2px 10px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; }
+  .summary-table .td-result { color: var(--text-muted); font-size: 0.84rem; }
+
+  .footer { text-align: center; padding: 40px 24px; color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid var(--border); max-width: 920px; margin: 0 auto; }
+  .scroll-top { position: fixed; bottom: 24px; right: 24px; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; border: none; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; z-index: 100; box-shadow: 0 4px 20px var(--accent-glow); }
+  .scroll-top.visible { opacity: 1; }
+
+  .hero-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 100px; padding: 5px 14px; color: var(--green); font-family: var(--font-mono); font-size: 0.88rem; text-decoration: none; transition: all 0.2s; white-space: nowrap; }
+  .hero-btn:hover { border-color: var(--green); background: var(--green-glow); }
+  .hero-btn svg { width: 14px; height: 14px; }
+
+  /* Multi-line command block with copy */
+  .cmd-block { background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); margin: 12px 0; display: flex; flex-direction: column; overflow: hidden; }
+  .cmd-block-row { display: flex; align-items: center; }
+  .cmd-block-row + .cmd-block-row { border-top: 1px solid var(--border); }
+  .cmd-block-code { flex: 1; padding: 12px 16px; font-family: var(--font-mono); font-size: 0.92rem; color: var(--green); display: flex; align-items: center; }
+  .cmd-block-copy { background: #0d1117; border: none; border-left: 1px solid var(--border); padding: 12px 16px; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; font-family: var(--font-mono); transition: all 0.2s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .cmd-block-copy:hover { color: var(--accent-light); background: var(--surface-2); }
+  .cmd-block-copy.copied { color: var(--green); }
+
+  /* ===== DEVELOPER TAB — same width as user tab ===== */
+  .dev-container { max-width: 920px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  /* Compact progress bar (replaces sidebar) */
+  .dev-progress-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 28px; }
+  .dev-progress-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .dev-progress-label { font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+  .dev-progress-count { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent-light); font-weight: 700; }
+  .dev-progress-bar { height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; margin-bottom: 16px; }
+  .dev-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 3px; transition: width 0.4s ease; width: 0%; }
+  .dev-steps-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dev-step-dot { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 100px; font-size: 0.72rem; font-weight: 600; font-family: var(--font-mono); cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); }
+  .dev-step-dot:hover { border-color: var(--accent); color: var(--accent-light); background: var(--accent-glow); }
+  .dev-step-dot.active { border-color: var(--accent-light); color: var(--accent-light); background: var(--accent-glow); }
+  .dev-step-dot.done { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+  .dev-reset-link { background: none; border: none; color: var(--text-muted); font-size: 0.78rem; cursor: pointer; padding: 0; font-family: var(--font); transition: color 0.2s; }
+  .dev-reset-link:hover { color: var(--red); }
+
+  .dev-header { margin-bottom: 32px; }
+  .dev-header-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 100px; padding: 5px 16px; margin-bottom: 16px; }
+  .dev-header-badge-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: devPulse 1.5s ease-in-out infinite; }
+  .dev-header-badge-text { font-size: 0.78rem; font-weight: 600; color: var(--accent-light); letter-spacing: 0.5px; text-transform: uppercase; }
+  .dev-header-title { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 800; margin-bottom: 8px; }
+  .dev-header-title-accent { background: linear-gradient(135deg, #fff, var(--accent-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .dev-header-title-sub { color: var(--green); }
+  .dev-header-subtitle { color: var(--text-muted); font-size: 1rem; margin-bottom: 16px; line-height: 1.6; }
+  .dev-tech-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .dev-tech-badge { padding: 4px 12px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted); }
+  .dev-run-cmd { display: flex; flex-direction: column; gap: 0; margin-bottom: 12px; }
+  .dev-run-cmd-row { display: flex; align-items: center; }
+  .dev-run-cmd-input { flex: 1; background: #0d1117; border: 1px solid var(--border); padding: 12px 16px; font-family: var(--font-mono); font-size: 0.92rem; color: var(--green); }
+  .dev-run-cmd-input.first { border-radius: var(--radius-sm) 0 0 0; border-bottom: none; }
+  .dev-run-cmd-input.last { border-radius: 0 0 0 var(--radius-sm); }
+  .dev-run-cmd-btn { background: #0d1117; border: 1px solid var(--border); border-left: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 12px 16px; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; font-family: var(--font-mono); transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .dev-run-cmd-btn:hover { color: var(--accent-light); background: var(--surface-2); }
+  .dev-run-cmd-btn.copied { color: var(--green); }
+  .dev-header-tip { color: var(--text-muted); font-size: 0.88rem; font-style: italic; }
+
+  @keyframes devPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .dev-block { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 28px; overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s; }
+  .dev-block:hover { border-color: var(--accent); }
+  .dev-block.active-block { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
+  .dev-block-accent { position: absolute; top: 0; left: 0; width: 100%; height: 3px; }
+  .dev-block-accent.manual { background: linear-gradient(90deg, var(--accent), var(--accent-light)); }
+  .dev-block-accent.auto { background: linear-gradient(90deg, var(--green), #00d2a8); }
+  .dev-block-accent.check { background: linear-gradient(90deg, var(--orange), #ffeaa7); }
+  .dev-block-bg { position: absolute; top: 0; left: 0; right: 0; height: 120px; pointer-events: none; }
+  .dev-block-bg.manual { background: linear-gradient(180deg, rgba(108,92,231,0.08), transparent); }
+  .dev-block-bg.auto { background: linear-gradient(180deg, rgba(0,184,148,0.06), transparent); }
+  .dev-block-bg.check { background: linear-gradient(180deg, rgba(253,203,110,0.06), transparent); }
+
+  .dev-block-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; position: relative; z-index: 1; flex-wrap: wrap; gap: 8px; }
+  .dev-block-header-left { display: flex; align-items: center; gap: 12px; }
+  .dev-block-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .dev-block.manual .dev-block-icon { background: var(--accent-glow); color: var(--accent-light); }
+  .dev-block.auto .dev-block-icon { background: var(--green-glow); color: var(--green); }
+  .dev-block.check .dev-block-icon { background: rgba(253,203,110,0.15); color: var(--orange); }
+  .dev-block-num { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 1px; }
+  .dev-block-type { font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+  .dev-block.manual .dev-block-type { background: var(--accent-glow); color: var(--accent-light); }
+  .dev-block.auto .dev-block-type { background: var(--green-glow); color: var(--green); }
+  .dev-block.check .dev-block-type { background: rgba(253,203,110,0.15); color: var(--orange); }
+  .dev-block-title { font-size: 1.15rem; font-weight: 700; margin-top: 4px; }
+  .dev-block-done-btn { padding: 6px 14px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); white-space: nowrap; }
+  .dev-block-done-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+  .dev-block-done-btn.is-done { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+  .dev-block-body { padding: 16px 24px 24px; position: relative; z-index: 1; }
+
+  .dev-prompt { background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; margin: 10px 0; font-family: var(--font-mono); font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+  .dev-prompt-arrow { color: var(--green); font-weight: 700; }
+  .dev-prompt-label { color: var(--text); }
+  .dev-prompt-default { color: var(--text-muted); }
+
+  .dev-yesno { display: flex; align-items: center; gap: 12px; margin: 10px 0; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  .dev-yesno-label { font-size: 0.9rem; font-weight: 600; }
+  .dev-yesno-option { padding: 4px 12px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; }
+  .dev-yesno-yes { background: var(--green-glow); color: var(--green); }
+  .dev-yesno-no { background: var(--surface-3); color: var(--text-muted); }
+
+  .dev-choice { margin: 12px 0; }
+  .dev-choice-option { padding: 14px 18px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; transition: border-color 0.2s; }
+  .dev-choice-option:hover { border-color: var(--accent); }
+  .dev-choice-option.selected { border-color: var(--accent); background: rgba(108,92,231,0.08); }
+  .dev-choice-option-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .dev-choice-option-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; background: var(--accent); color: #fff; flex-shrink: 0; }
+  .dev-choice-option-title { font-weight: 700; font-size: 0.95rem; }
+  .dev-choice-option-desc { color: var(--text-muted); font-size: 0.85rem; margin-left: 34px; }
+
+  .dev-term { background: #0a0e14; border: 1px solid var(--border); border-radius: var(--radius-sm); margin: 12px 0; overflow: hidden; }
+  .dev-term-header { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border); }
+  .dev-term-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dev-term-dot.red { background: #ff5f57; }
+  .dev-term-dot.yellow { background: #febc2e; }
+  .dev-term-dot.green { background: #28c840; }
+  .dev-term-body { padding: 14px 18px; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.65; color: #b3bce0; overflow-x: auto; }
+
+  .dev-code { position: relative; background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); margin: 12px 0; overflow: hidden; }
+  .dev-code-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 14px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border); }
+  .dev-code-lang { font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono); }
+  .dev-code-copy { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.78rem; font-family: var(--font-mono); padding: 2px 8px; border-radius: 4px; transition: all 0.2s; display: flex; align-items: center; gap: 4px; }
+  .dev-code-copy:hover { color: var(--accent-light); background: var(--surface-2); }
+  .dev-code-copy.copied { color: var(--green); }
+  .dev-code-body { padding: 14px 18px; font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.6; color: #c9d1d9; overflow-x: auto; white-space: pre; }
+
+  .dev-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+  .dev-col { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; }
+  .dev-col-title { font-size: 0.85rem; font-weight: 700; color: var(--accent-light); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .dev-col-content { font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; }
+  .dev-col-content code { background: #0d1117; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.82em; color: var(--orange); }
+
+  .dev-checklist { margin: 12px 0; }
+  .dev-check-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; }
+  .dev-check-icon { font-size: 1rem; }
+  .dev-check-icon.ok { color: var(--green); }
+  .dev-check-label { font-size: 0.9rem; }
+  .dev-check-status { margin-left: auto; font-size: 0.78rem; font-weight: 600; }
+  .dev-check-status.ok { color: var(--green); }
+
+  .dev-flow-inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 16px 0; padding: 16px; }
+  .dev-flow-node { padding: 8px 16px; border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 600; border: 1px solid; white-space: nowrap; }
+  .dev-flow-node.green { background: rgba(0,184,148,0.10); border-color: var(--green); color: var(--green); }
+  .dev-flow-node.purple { background: rgba(108,92,231,0.12); border-color: var(--accent); color: var(--accent-light); }
+  .dev-flow-arrow { color: var(--text-muted); font-size: 1.1rem; }
+
+  .dev-substep { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px; }
+  .dev-substep-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; background: var(--green); color: #fff; flex-shrink: 0; }
+  .dev-substep-content { flex: 1; }
+  .dev-substep-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+  .dev-substep-desc { color: var(--text-muted); font-size: 0.83rem; }
+  .dev-substep-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; background: var(--green-glow); color: var(--green); flex-shrink: 0; margin-top: 2px; }
+
+  .dev-http-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .dev-http-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; text-align: center; }
+  .dev-http-code { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 800; margin-bottom: 6px; }
+  .dev-http-code.c200 { color: var(--green); }
+  .dev-http-code.c404 { color: var(--orange); }
+  .dev-http-code.c401 { color: var(--red); }
+  .dev-http-desc { font-size: 0.82rem; color: var(--text-muted); }
+
+  .dev-summary { margin-top: 40px; padding: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  .dev-summary-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .dev-commands-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.85rem; }
+  .dev-commands-table th { background: var(--surface-3); padding: 10px 14px; text-align: left; border: 1px solid var(--border); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+  .dev-commands-table td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  .dev-commands-table code { font-family: var(--font-mono); font-size: 0.82rem; color: var(--orange); background: #0d1117; padding: 1px 5px; border-radius: 3px; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 40px 16px 28px; }
+    .step { padding: 20px 18px; }
+    .nav-inner { gap: 4px; }
+    .nav a { padding: 4px 10px; font-size: 0.75rem; }
+    .tab-btn { padding: 12px 16px; font-size: 0.88rem; }
+    .summary-table { font-size: 0.8rem; }
+    .summary-table th, .summary-table td { padding: 8px 10px; }
+    .dev-cols { grid-template-columns: 1fr; }
+    .dev-http-cards { grid-template-columns: 1fr; }
+    .dev-block-body { padding: 14px 18px 20px; }
+    .dev-block-header { padding: 16px 18px 0; }
+    .dev-step-dot { font-size: 0; padding: 6px; min-width: 28px; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-logo">
+      <svg width="120" height="51" viewBox="0 0 120 51" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M64.4761 1L49.3778 11.4271L54.1837 18.7554L59.2874 15.3635V25.0369H53.163V33.2027H75.7041V25.0369H69.6223V4.55946L64.4761 1ZM91.1426 18.923C91.6955 19.1323 92.3335 19.258 93.1841 19.3836C93.9922 19.4674 94.8853 19.6767 95.7784 19.9699C96.7141 20.263 97.5647 20.598 98.3728 21.0586C99.1809 21.4774 99.8613 22.1474 100.414 23.1106C100.967 24.0318 101.222 25.1625 101.222 26.4607C101.222 27.8426 100.925 29.0151 100.287 30.062C99.6487 31.1089 98.8406 31.8627 97.8199 32.3652C96.7992 32.8677 95.7784 33.2446 94.7152 33.4958C93.6519 33.7471 92.5461 33.8727 91.4403 33.8727C86.2091 33.8727 82.8067 32.1558 81.2756 28.7638L88.2931 25.665C88.846 27.1307 89.8667 27.8426 91.3978 27.8426C92.376 27.8426 92.8864 27.5494 92.8864 26.9213C92.8864 26.5444 92.5036 26.2513 91.7806 26.0419C91.0576 25.8325 90.1644 25.5813 89.1862 25.33C88.1655 25.0787 87.1448 24.7437 86.124 24.325C85.1033 23.9062 84.2102 23.2362 83.4872 22.2312C82.7641 21.268 82.3814 20.0536 82.3814 18.588C82.3814 16.2429 83.2745 14.4422 85.1033 13.1441C86.9321 11.8459 89.0161 11.2178 91.3978 11.2178C96.1612 11.2178 99.3084 13.0184 100.84 16.6617L94.2048 19.0067C93.6944 17.7923 92.8864 17.206 91.7806 17.206C90.7598 17.206 90.3345 17.5411 90.3345 18.1273C90.3345 18.4623 90.5897 18.7555 91.1426 18.923ZM114.449 19.3417H119L118.957 11.7622H114.407V2.50757L106.368 8.11896V11.7622H103.306V19.2999H106.368V24.3669C106.368 28.0938 107.347 30.6483 109.261 32.0302C111.217 33.454 114.449 33.8308 119 33.2027V26.0838C118.022 26.1675 117.171 26.1675 116.491 26.1257C115.81 26.0838 115.3 25.8744 114.96 25.5394C114.619 25.2044 114.449 24.66 114.449 23.9481V19.3417Z" fill="#ED1849"></path>
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M13.8649 11.2178C16.7995 11.2178 19.1812 12.3066 21.0525 14.4422C22.9239 16.5779 23.817 19.2999 23.817 22.5243C23.817 25.7906 22.8813 28.4707 21.0525 30.6064C19.1812 32.7421 16.7995 33.8308 13.8649 33.8308C11.3556 33.8308 9.44174 32.9933 8.03824 31.3183V33.2446H0V8.24457L8.03824 2.59131V13.7722C9.39921 12.0553 11.3556 11.2178 13.8649 11.2178ZM9.1015 25.4138C9.82452 26.1675 10.7602 26.5863 11.9085 26.5863C13.0568 26.5863 13.9925 26.2094 14.7155 25.4138C15.4385 24.66 15.7788 23.6968 15.7788 22.5243C15.7788 21.3937 15.4385 20.4305 14.7155 19.6349C13.9925 18.8811 13.0568 18.4623 11.9085 18.4623C10.7602 18.4623 9.82452 18.8392 9.1015 19.6349C8.37849 20.3886 8.03824 21.3518 8.03824 22.5243C8.03824 23.655 8.37849 24.6181 9.1015 25.4138ZM79.5318 11.4271L74.6833 18.7555L71.8338 16.8292V6.10889L79.5318 11.4271ZM37.9371 27.3819C35.683 27.3819 34.1944 26.67 33.5139 25.2463V25.2044H47.9743C48.1869 24.325 48.3145 23.3618 48.3145 22.4406C48.3145 19.2161 47.2512 16.536 45.1247 14.4004C42.9982 12.2647 40.2763 11.2178 36.9589 11.2178C33.599 11.2178 30.8345 12.3066 28.6655 14.4841C26.4964 16.6617 25.3906 19.3417 25.3906 22.6081C25.3906 25.8325 26.4964 28.5126 28.7505 30.6483C31.0046 32.7839 33.9818 33.8308 37.6819 33.8308C41.6798 33.8308 44.742 32.6583 46.911 30.3551L41.6372 26C40.4889 26.9213 39.2555 27.3819 37.9371 27.3819ZM40.7016 20.1374H33.3863C34.0243 18.4205 35.3002 17.5829 37.1715 17.5829C39.0429 17.5829 40.1912 18.4205 40.7016 20.1374Z" fill="white"></path>
+      </svg>
+    </div>
+    <div class="hero-badge">Пошаговая инструкция</div>
+    <h1>Развертывание нейросайта</h1>
+    <p>Размещение сайта, созданного нейросетью, на сервере с помощью скрипта autodeploy.py <a href="https://raw.githubusercontent.com/Mmitekk/autodeploy/main/autodeploy.py" download="autodeploy.py" class="hero-btn" title="Скачать autodeploy.py"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Скачать</a></p>
+  </div>
+</section>
+
+<!-- ===== TABS ===== -->
+<div class="tabs-wrap">
+  <div class="tabs-nav">
+    <button class="tab-btn active" data-tab="simple">Для пользователя</button>
+    <button class="tab-btn" data-tab="tech">Для разработчика</button>
+  </div>
+</div>
+
+<!-- TAB 1 — ДЛЯ ПОЛЬЗОВАТЕЛЯ -->
+<div class="tab-panel active" id="tab-simple">
+  <nav class="nav"><div class="nav-inner"><a href="#s1">1. Копирование</a><a href="#s2">2. Репозиторий</a><a href="#s3">3. Запуск</a><a href="#s-summary">Результат</a></div></nav>
+  <div class="container">
+    <div class="step" data-color="purple" id="s1">
+      <div class="step-header"><div class="step-number">1</div><div><div class="step-title">Копируем файлы сайта на сервер</div><div class="step-subtitle">Переносим готовый сайт на хостинг</div></div></div>
+      <div class="step-body">
+        <p>Скопируйте все файлы сайта на сервер в папку, название которой совпадает с вашим доменом. Например, для сайта <code>narkozav7.ru</code> это будет папка <code>/var/www/narkozav7.ru</code>.</p>
+        <p>Важно: все файлы должны лежать прямо внутри этой папки, а не в дополнительной подпапке.</p>
+        <div class="code-label">Команда для копирования</div>
+        <div class="code-block"><span class="comment"># Копируем файлы на сервер</span><br>scp -r ./site-files/* root@your-server:/var/www/narkozav7.ru/</div>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>Если вы не знаете, как подключиться к серверу &mdash; используйте программу для SSH-доступа (например, PuTTY на Windows или Terminal на Mac) с данными, которые предоставил хостинг.</p></div>
+      </div>
+    </div>
+    <div class="step" data-color="green" id="s2">
+      <div class="step-header"><div class="step-number">2</div><div><div class="step-title">Создаём репозиторий на GitHub</div><div class="step-subtitle">Нужен, чтобы нейросеть могла обновлять сайт&ensp;<span class="tag tag-auto">ВИДЕО</span></div></div></div>
+      <div class="step-body">
+        <p>Репозиторий &mdash; это хранилище кода сайта на GitHub. Благодаря ему нейросеть сможет вносить изменения в сайт и автоматически обновлять его на сервере. Посмотрите видеоинструкцию, а затем выполните шаги ниже.</p>
+        <div class="video-wrapper"><video controls preload="metadata"><source src="2026-06-05_12-16-58.mp4" type="video/mp4">Ваш браузер не поддерживает воспроизведение видео.</video></div>
+        <ol class="substeps">
+          <li data-num="1">Зайдите на <strong>github.com</strong> и нажмите кнопку <strong>New repository</strong> (новый репозиторий)</li>
+          <li data-num="2">В качестве имени укажите ваш домен, например <code>be6st.ru</code></li>
+          <li data-num="3">Поставьте галочку <strong>Private</strong> (приватный), чтобы код сайта не был виден посторонним</li>
+          <li data-num="4">Создайте <strong>токен доступа</strong> &mdash; это специальный пароль для скрипта. Для этого: Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; Fine-grained tokens &rarr; Generate new token</li>
+        </ol>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p><strong>Сохраните токен сразу!</strong> После создания GitHub покажет его только один раз. Без токена скрипт не сможет подключиться к репозиторию. При создании токена убедитесь, что дали ему права на <strong>Contents</strong>, <strong>Webhooks</strong> и <strong>Administration</strong>.</p></div>
+        <div class="info-box info"><div class="icon">&#9432;</div><p><strong>Как понять, кто владелец репозитория:</strong> посмотрите на ссылку &mdash; например, <code>https://github.com/Mmitekk/be2st.ru</code>. Здесь <strong>Mmitekk</strong> &mdash; это владелец (логин), а <strong>be2st.ru</strong> &mdash; название репозитория. Эти данные понадобятся при запуске скрипта.</p></div>
+      </div>
+    </div>
+    <div class="step" data-color="orange" id="s3">
+      <div class="step-header"><div class="step-number">3</div><div><div class="step-title">Запускаем скрипт развертывания</div><div class="step-subtitle">Скрипт сам сделает почти всё за вас</div></div></div>
+      <div class="step-body">
+        <p>Подключитесь к серверу, перейдите в каталог скрипта и запустите его. Он задаст несколько вопросов, а всё остальное сделает автоматически: установит нужные программы, соберёт сайт, запустит его и настроит обновления.</p>
+        <div class="cmd-block">
+          <div class="cmd-block-row">
+            <div class="cmd-block-code">cd /var/www</div>
+            <button class="cmd-block-copy" onclick="copySingleCmd(this, 'cd /var/www')" title="Скопировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать</button>
+          </div>
+          <div class="cmd-block-row">
+            <div class="cmd-block-code">python3 autodeploy.py</div>
+            <button class="cmd-block-copy" onclick="copySingleCmd(this, 'python3 autodeploy.py')" title="Скопировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать</button>
+          </div>
+        </div>
+        <ol class="substeps">
+          <li data-num="1"><strong>Название проекта</strong> &mdash; введите домен вашего сайта, например <code>be6st.ru</code></li>
+          <li data-num="2"><strong>Путь к сайту</strong> &mdash; полный путь на сервере, например <code>/var/www/be6st.ru</code></li>
+          <li data-num="3"><strong>Режим запуска</strong> &mdash; введите <code>1</code> (Standalone &mdash; это рекомендуемый режим)</li>
+          <li data-num="4"><strong>Домен и SSL</strong> &mdash; введите ваш домен. Если домен уже привязан к серверу и нужен безопасный протокол (HTTPS) &mdash; нажмите <code>y</code>. Если домен ещё не опубликован &mdash; нажмите <code>n</code></li>
+          <li data-num="5"><strong>Логин владельца GitHub</strong> &mdash; логин из ссылки на репозиторий (например, <code>Mmitekk</code>)</li>
+          <li data-num="6"><strong>Название репозитория</strong> &mdash; имя репозитория из ссылки (например, <code>be2st.ru</code>)</li>
+          <li data-num="7"><strong>Приватный?</strong> &mdash; нажмите <code>y</code></li>
+          <li data-num="8"><strong>Токен GitHub</strong> &mdash; вставьте токен, который вы создали на шаге 2</li>
+          <li data-num="9"><strong>Ждите</strong> &mdash; скрипт автоматически установит все зависимости, соберёт сайт, запустит его и настроит автоматические обновления. Это может занять несколько минут</li>
+        </ol>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>После завершения скрипта ваш сайт будет доступен по адресу домена. А при каждом обновлении кода в GitHub сайт будет автоматически обновляться на сервере.</p></div>
+      </div>
+    </div>
+    <div class="step" data-color="blue" id="s-summary">
+      <div class="step-header"><div class="step-number">&#10003;</div><div><div class="step-title">Результат выполнения</div><div class="step-subtitle">Что вы увидите после успешного завершения скрипта</div></div></div>
+      <div class="step-body">
+        <p>Если все шаги выполнены верно, скрипт покажет таблицу с результатами каждого этапа:</p>
+        <table class="summary-table"><thead><tr><th>#</th><th>Блок</th><th>Статус</th><th>Результат</th></tr></thead><tbody>
+          <tr><td class="td-num">1</td><td class="td-block">Название проекта и путь</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Проект: be6st.ru</td></tr>
+          <tr><td class="td-num">2</td><td class="td-block">Выбор свободного порта</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Порт: 3006</td></tr>
+          <tr><td class="td-num">3</td><td class="td-block">Режим запуска</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Standalone (node server.js)</td></tr>
+          <tr><td class="td-num">4</td><td class="td-block">Домен и SSL</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Домен: be6st.ru, SSL: Нет</td></tr>
+          <tr><td class="td-num">5</td><td class="td-block">Подготовка PM2 конфигурации</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Конфиг создан: Standalone</td></tr>
+          <tr><td class="td-num">6</td><td class="td-block">Конфигурация веб-сервера</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Nginx: конфиг уже настроен</td></tr>
+          <tr><td class="td-num">7</td><td class="td-block">Git-репозиторий</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Репозиторий: Mmitekk/be2st.ru</td></tr>
+          <tr><td class="td-num">8</td><td class="td-block">Поиск файла базы данных</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Найдена БД: db/custom.db</td></tr>
+          <tr><td class="td-num">9</td><td class="td-block">Создание .gitignore</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Создан: /var/www/be6st.ru/.gitignore</td></tr>
+          <tr><td class="td-num">10</td><td class="td-block">Создание .env</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Создан: /var/www/be6st.ru/.env</td></tr>
+          <tr><td class="td-num">11</td><td class="td-block">Сборка и запуск</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Завершена</td></tr>
+          <tr><td class="td-num">12</td><td class="td-block">Проверка репозитория и токена</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Репозиторий Mmitekk/be2st.ru доступен</td></tr>
+          <tr><td class="td-num">13</td><td class="td-block">Первый коммит и пуш</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Коммит: AutoDeploy: initial commit for be6st.ru [2026-06-05 11:21]</td></tr>
+          <tr><td class="td-num">14</td><td class="td-block">Финальные проверки</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Все проверки пройдены</td></tr>
+          <tr><td class="td-num">15</td><td class="td-block">Настройка автодеплоя</td><td class="td-status"><span class="status-ok">OK</span></td><td class="td-result">Webhook порт: 9003</td></tr>
+        </tbody></table>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>Если напротив каждого блока стоит <strong>OK</strong> &mdash; сайт успешно развёрнут и доступен по вашему домену!</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2 — ДЛЯ РАЗРАБОТЧИКА -->
+<div class="tab-panel" id="tab-tech">
+  <div class="dev-container">
+
+    <!-- Compact progress card (replaces sidebar) -->
+    <div class="dev-progress-card">
+      <div class="dev-progress-top">
+        <span class="dev-progress-label">Прогресс установки</span>
+        <span class="dev-progress-count" id="devProgressText">0 / 15</span>
+        <button class="dev-reset-link" onclick="devResetProgress()" title="Сбросить">&#8635; Сбросить</button>
+      </div>
+      <div class="dev-progress-bar"><div class="dev-progress-fill" id="devProgressFill"></div></div>
+      <div class="dev-steps-row" id="devStepsRow">
+        <div class="dev-step-dot pending" data-block="1" onclick="devScrollToBlock(1)">01</div>
+        <div class="dev-step-dot pending" data-block="2" onclick="devScrollToBlock(2)">02</div>
+        <div class="dev-step-dot pending" data-block="3" onclick="devScrollToBlock(3)">03</div>
+        <div class="dev-step-dot pending" data-block="4" onclick="devScrollToBlock(4)">04</div>
+        <div class="dev-step-dot pending" data-block="5" onclick="devScrollToBlock(5)">05</div>
+        <div class="dev-step-dot pending" data-block="6" onclick="devScrollToBlock(6)">06</div>
+        <div class="dev-step-dot pending" data-block="7" onclick="devScrollToBlock(7)">07</div>
+        <div class="dev-step-dot pending" data-block="8" onclick="devScrollToBlock(8)">08</div>
+        <div class="dev-step-dot pending" data-block="9" onclick="devScrollToBlock(9)">09</div>
+        <div class="dev-step-dot pending" data-block="10" onclick="devScrollToBlock(10)">10</div>
+        <div class="dev-step-dot pending" data-block="11" onclick="devScrollToBlock(11)">11</div>
+        <div class="dev-step-dot pending" data-block="12" onclick="devScrollToBlock(12)">12</div>
+        <div class="dev-step-dot pending" data-block="13" onclick="devScrollToBlock(13)">13</div>
+        <div class="dev-step-dot pending" data-block="14" onclick="devScrollToBlock(14)">14</div>
+        <div class="dev-step-dot pending" data-block="15" onclick="devScrollToBlock(15)">15</div>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="dev-header">
+      <div class="dev-header-badge">
+        <div class="dev-header-badge-dot"></div>
+        <div class="dev-header-badge-text">v8 &middot; PYTHON SCRIPT</div>
+      </div>
+      <div class="dev-header-title">
+        <span class="dev-header-title-accent">AutoDeploy</span>
+        <span class="dev-header-title-sub">Setup</span>
+      </div>
+      <div class="dev-header-subtitle">Пошаговая инструкция для настройки автодеплоя &mdash; Next.js + Prisma + SQLite на VDS</div>
+      <div class="dev-tech-badges">
+        <span class="dev-tech-badge">Next.js</span>
+        <span class="dev-tech-badge">Prisma</span>
+        <span class="dev-tech-badge">SQLite</span>
+        <span class="dev-tech-badge">PM2</span>
+        <span class="dev-tech-badge">Nginx</span>
+        <span class="dev-tech-badge">GitHub</span>
+      </div>
+      <div class="dev-run-cmd">
+        <div class="dev-run-cmd-row">
+          <div class="dev-run-cmd-input first">cd /var/www</div>
+        </div>
+        <div class="dev-run-cmd-row">
+          <div class="dev-run-cmd-input last">python3 autodeploy.py</div>
+          <button class="dev-run-cmd-btn" onclick="devCopyRun(this)">&#128203; Копировать</button>
+        </div>
+      </div>
+      <div class="dev-header-tip">&#128161; Отвечайте на вопросы скрипта или нажимайте Enter для значения по умолчанию. Ниже &mdash; описание каждого шага с пояснениями.</div>
+    </div>
+
+
+    <div class="dev-block manual" id="devBlock1" data-block="1">
+      <div class="dev-block-accent manual"></div>
+      <div class="dev-block-bg manual"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9997;</div>
+          <div><div class="dev-block-num">БЛОК 01 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Название проекта и путь</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(1, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Скрипт автоматически определит структуру проекта Next.js и проверит наличие ключевых файлов</p></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Название проекта</span><span class="dev-prompt-default">[my-project]</span></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Путь к сайту на сервере</span><span class="dev-prompt-default">[/var/www/my-project]</span></div>
+        <div class="dev-term">
+          <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+          <div class="dev-term-body"><span style="color:#00b894">&#10003;</span> Next.js project detected<br><span style="color:#00b894">&#10003;</span> package.json found<br><span style="color:#00b894">&#10003;</span> next.config.ts found<br><span style="color:#a29bfe">Domain:</span> my-project</div>
+        </div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Если директория не существует, она будет создана автоматически</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock2" data-block="2">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 02 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Выбор свободного порта</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(2, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Сканирование портов 3000-9999 для поиска свободного</p></div>
+        <div class="dev-code">
+          <div class="dev-code-header"><span class="dev-code-lang">port scan</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+          <div class="dev-code-body">  Порт 3000 ... занят (ss)
+  Порт 3001 ... занят (socket test)
+  Порт 3002 ... <span style="color:#00b894">свободен</span> &#10003;</div>
+        </div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Порт для Next.js</span><span class="dev-prompt-default">[3002]</span></div>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>Один проект &mdash; один порт. PM2 запускает приложение на выбранном порту</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block manual" id="devBlock3" data-block="3">
+      <div class="dev-block-accent manual"></div>
+      <div class="dev-block-bg manual"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9997;</div>
+          <div><div class="dev-block-num">БЛОК 03 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Режим запуска</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(3, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Проверка output: &laquo;standalone&raquo; в next.config.*</p></div>
+        <div class="dev-choice">
+          <div class="dev-choice-option selected">
+            <div class="dev-choice-option-header"><div class="dev-choice-option-num">1</div><div class="dev-choice-option-title">Standalone (рекомендуется)</div></div>
+            <div class="dev-choice-option-desc">node .next/standalone/server.js &mdash; быстрее, меньше памяти</div>
+          </div>
+          <div class="dev-choice-option">
+            <div class="dev-choice-option-header"><div class="dev-choice-option-num">2</div><div class="dev-choice-option-title">Standard</div></div>
+            <div class="dev-choice-option-desc">npx next start &mdash; требует полный node_modules</div>
+          </div>
+          <div class="dev-choice-option">
+            <div class="dev-choice-option-header"><div class="dev-choice-option-num">3</div><div class="dev-choice-option-title">Автоопределение</div></div>
+            <div class="dev-choice-option-desc">анализ конфига после сборки</div>
+          </div>
+        </div>
+        <div class="dev-code">
+          <div class="dev-code-header"><span class="dev-code-lang">next.config.ts</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+          <div class="dev-code-body">const nextConfig = {
+  output: "standalone",
+};
+export default nextConfig;</div>
+        </div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Если выбран Standalone, но server.js не создан после сборки &mdash; автоматическое переключение на Standard</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block manual" id="devBlock4" data-block="4">
+      <div class="dev-block-accent manual"></div>
+      <div class="dev-block-bg manual"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9997;</div>
+          <div><div class="dev-block-num">БЛОК 04 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">Домен и SSL</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(4, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Домен сайта (можно пропустить)</span><span class="dev-prompt-default">[localhost]</span></div>
+        <div class="dev-cols">
+          <div class="dev-col">
+            <div class="dev-col-title">&#127760; Если домен указан</div>
+            <div class="dev-col-content">Nginx/Apache vhost с <code>proxy_pass</code><br>SSL через Let&rsquo;s Encrypt<br>Автоматический редирект HTTP&rarr;HTTPS</div>
+          </div>
+          <div class="dev-col">
+            <div class="dev-col-title">&#128187; Если без домена</div>
+            <div class="dev-col-content">Доступ только по <code>http://IP:port</code><br>Apache/Nginx не настраивается<br>SSL недоступен</div>
+          </div>
+        </div>
+        <div class="dev-yesno"><span class="dev-yesno-label">Настроить SSL (Let&rsquo;s Encrypt)?</span><span class="dev-yesno-option dev-yesno-yes">Y</span><span class="dev-yesno-option dev-yesno-no">N (по умолчанию)</span></div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Для SSL домен должен быть привязан к IP сервера через DNS A-запись</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock5" data-block="5">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 05 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Подготовка PM2 конфигурации</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(5, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>PM2 &mdash; менеджер процессов Node.js. Обеспечивает автозапуск и перезапуск при падении</p></div>
+        <div class="dev-term">
+          <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+          <div class="dev-term-body"><span style="color:#a29bfe">Creating</span> ecosystem.config.js...<br>mode: standalone<br>script: .next/standalone/server.js<br>port: 3002<br><span style="color:#00b894">&#10003; ecosystem.config.js created</span></div>
+        </div>
+        <div class="dev-code">
+          <div class="dev-code-header"><span class="dev-code-lang">ecosystem.config.js</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+          <div class="dev-code-body">module.exports = {
+  apps: [{
+    name: "my-project",
+    script: ".next/standalone/server.js",
+    env: { PORT: 3002, NODE_ENV: "production" },
+    autorestart: true,
+    max_memory_restart: "500M"
+  }]
+};</div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock6" data-block="6">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 06 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Конфигурация веб-сервера</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(6, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Автоопределение веб-сервера, слушающего порт 80 (Nginx или Apache)</p></div>
+        <div class="dev-cols">
+          <div class="dev-col">
+            <div class="dev-col-title">&#128240; Nginx</div>
+            <div class="dev-col-content"><code>proxy_pass http://127.0.0.1:3002</code><br><code>proxy_set_header Upgrade</code><br><code>alias /.next/static/</code></div>
+          </div>
+          <div class="dev-col">
+            <div class="dev-col-title">&#128240; Apache</div>
+            <div class="dev-col-content"><code>ProxyPass / http://127.0.0.1:3002</code><br><code>ProxyPassReverse</code><br><code>DirectoryIndex</code></div>
+          </div>
+        </div>
+        <div class="dev-term">
+          <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+          <div class="dev-term-body"><span style="color:#a29bfe">Detected:</span> Nginx on port 80<br><span style="color:#a29bfe">Creating</span> /etc/nginx/sites-available/my-project...<br><span style="color:#a29bfe">Enabling</span> site...<br><span style="color:#fdcb6e">Reloading</span> nginx...<br><span style="color:#00b894">&#10003; Nginx configured</span></div>
+        </div>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>WebSocket прокси настроен автоматически через <code>proxy_set_header Upgrade</code></p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block manual" id="devBlock7" data-block="7">
+      <div class="dev-block-accent manual"></div>
+      <div class="dev-block-bg manual"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9997;</div>
+          <div><div class="dev-block-num">БЛОК 07 &middot;</div><div class="dev-block-type">MANUAL</div><div class="dev-block-title">GitHub Token &amp; Repository</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(7, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Используется только HTTPS + Token (без SSH-ключей)</p></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Логин владельца GitHub</span><span class="dev-prompt-default">[]</span></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">GitHub Personal Access Token</span><span class="dev-prompt-default">[скрытый ввод]</span></div>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p><strong>Создание Fine-grained токена:</strong><br>1. Settings &rarr; Developer settings &rarr; Personal access tokens<br>2. Fine-grained tokens &rarr; Generate new token<br>3. Выберите Repository access &rarr; All repositories<br>4. Права: Contents (R/W), Webhooks (R/W), Administration (R/W)</p></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Название репозитория (owner/repo)</span><span class="dev-prompt-default">[]</span></div>
+        <div class="dev-yesno"><span class="dev-yesno-label">Приватный репозиторий?</span><span class="dev-yesno-option dev-yesno-yes">Y (по умолчанию)</span><span class="dev-yesno-option dev-yesno-no">N</span></div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Fine-grained токены могут вернуть 403 при создании репо через API</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock8" data-block="8">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 08 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Поиск файла базы данных</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(8, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматический поиск *.db файлов в директории проекта (до 3 уровней)</p></div>
+        <div class="dev-term">
+          <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+          <div class="dev-term-body"><span style="color:#a29bfe">Scanning</span> /var/www/my-project/...<br>  Level 1: *.db ... not found<br>  Level 2: db/*.db ... <span style="color:#00b894">found!</span><br><span style="color:#00b894">&#10003;</span> Database: db/custom.db</div>
+        </div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>База данных НЕ попадает в Git (*.db в .gitignore)</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock9" data-block="9">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 09 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Создание .gitignore</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(9, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box success"><div class="icon">&#10003;</div><p>Полностью автоматический блок &mdash; без ввода данных</p></div>
+        <div class="dev-code">
+          <div class="dev-code-header"><span class="dev-code-lang">.gitignore</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+          <div class="dev-code-body">node_modules/
+.next/
+*.db
+*.db-journal
+.env
+.env.*
+logs/
+*.log
+deploy-*.sh
+autodeploy.py
+webhook-server.js
+ecosystem.config.js
+.DS_Store</div>
+        </div>
+        <div class="dev-cols">
+          <div class="dev-col">
+            <div class="dev-col-title">&#10003; В Git (исходный код)</div>
+            <div class="dev-col-content"><code>src/</code>, <code>prisma/</code>, <code>public/</code><br><code>package.json</code>, <code>next.config.ts</code><br><code>tsconfig.json</code>, <code>tailwind.config.ts</code></div>
+          </div>
+          <div class="dev-col">
+            <div class="dev-col-title">&#10008; НЕ в Git (секреты, сборка, БД)</div>
+            <div class="dev-col-content"><code>.env</code> &mdash; переменные окружения<br><code>*.db</code> &mdash; база данных<br><code>node_modules/</code>, <code>.next/</code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock10" data-block="10">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 10 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Создание .env</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(10, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box success"><div class="icon">&#10003;</div><p>Полностью автоматический &mdash; создаёт .env на основе параметров</p></div>
+        <div class="dev-code">
+          <div class="dev-code-header"><span class="dev-code-lang">.env</span><button class="dev-code-copy" onclick="devCopyCode(this)">&#128203; Копировать</button></div>
+          <div class="dev-code-body">APP_NAME=my-project
+PORT=3002
+DATABASE_URL=file:./db/custom.db
+NEXT_PUBLIC_SITE_URL=https://my-project.ru
+SECRET_KEY=a1b2c3d4e5f6...
+ENABLE_SSL=false</div>
+        </div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>.env никогда не попадает в Git &mdash; он исключён в .gitignore</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock11" data-block="11">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 11 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Git Init + Remote + Build + PM2 Start</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(11, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="dev-substep">
+          <div class="dev-substep-num">1</div>
+          <div class="dev-substep-content"><div class="dev-substep-title">Создание директорий</div><div class="dev-substep-desc">logs/, public/, tmp/ &mdash; необходимые для работы директории</div></div>
+          <div class="dev-substep-badge">AUTO</div>
+        </div>
+        <div class="dev-substep">
+          <div class="dev-substep-num">2</div>
+          <div class="dev-substep-content"><div class="dev-substep-title">Git init</div><div class="dev-substep-desc">Инициализация локального Git-репозитория в директории проекта</div></div>
+          <div class="dev-substep-badge">AUTO</div>
+        </div>
+        <div class="dev-substep">
+          <div class="dev-substep-num">3</div>
+          <div class="dev-substep-content"><div class="dev-substep-title">npm install --legacy-peer-deps</div><div class="dev-substep-desc">Установка зависимостей с проверкой целостности SWC-бинарника</div></div>
+          <div class="dev-substep-badge">AUTO</div>
+        </div>
+        <div class="dev-substep">
+          <div class="dev-substep-num">4</div>
+          <div class="dev-substep-content"><div class="dev-substep-title">next build</div><div class="dev-substep-desc">Сборка проекта. При OOM &mdash; автоматический retry с лимитом 2ГБ (NODE_OPTIONS=--max-old-space-size=2048)</div></div>
+          <div class="dev-substep-badge">AUTO</div>
+        </div>
+        <div class="dev-substep">
+          <div class="dev-substep-num">5</div>
+          <div class="dev-substep-content"><div class="dev-substep-title">PM2 start ecosystem.config.js</div><div class="dev-substep-desc">Запуск приложения через PM2 с автоматическим перезапуском</div></div>
+          <div class="dev-substep-badge">AUTO</div>
+        </div>
+        <div class="info-box tip"><div class="icon">&#10003;</div><p>При Standalone режиме .next/static и public/ копируются автоматически</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block check" id="devBlock12" data-block="12">
+      <div class="dev-block-accent check"></div>
+      <div class="dev-block-bg check"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#128269;</div>
+          <div><div class="dev-block-num">БЛОК 12 &middot;</div><div class="dev-block-type">CHECK</div><div class="dev-block-title">Проверка репозитория и токена</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(12, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Проверка доступа к репозиторию через GitHub API</p></div>
+        <div class="dev-http-cards">
+          <div class="dev-http-card"><div class="dev-http-code c200">200</div><div class="dev-http-desc">Репозиторий существует, доступ есть</div></div>
+          <div class="dev-http-card"><div class="dev-http-code c404">404</div><div class="dev-http-desc">Репозиторий не найден</div></div>
+          <div class="dev-http-card"><div class="dev-http-code c401">401</div><div class="dev-http-desc">Токен неверен или истёк</div></div>
+        </div>
+        <div class="dev-term">
+          <div class="dev-term-header"><div class="dev-term-dot red"></div><div class="dev-term-dot yellow"></div><div class="dev-term-dot green"></div></div>
+          <div class="dev-term-body"><span style="color:#a29bfe">$</span> curl -s -o /dev/null -w "%{http_code}" \<br>  -H "Authorization: token ghp_***" \<br>  https://api.github.com/repos/Mmitekk/be2st.ru<br><span style="color:#00b894">200</span> &mdash; Repository accessible</div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock13" data-block="13">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 13 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Первый коммит и пуш</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(13, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматический коммит и push в основную ветку</p></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Автор коммита</span><span class="dev-prompt-default">[из профиля GitHub]</span></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Email автора</span><span class="dev-prompt-default">[из профиля GitHub]</span></div>
+        <div class="dev-cols">
+          <div class="dev-col">
+            <div class="dev-col-title">&#10003; Обычный push</div>
+            <div class="dev-col-content"><code>git push -u origin main</code><br>Стандартная отправка при отсутствии конфликтов</div>
+          </div>
+          <div class="dev-col">
+            <div class="dev-col-title">&#9888; Force push (при конфликтах)</div>
+            <div class="dev-col-content"><code>git push -f origin main</code><br>Перезаписывает историю на remote</div>
+          </div>
+        </div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Force push перезаписывает историю на remote. Сервер &mdash; источник истины</p></div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock14" data-block="14">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 14 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Финальные проверки</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(14, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Автоматическая проверка всех компонентов деплоя</p></div>
+        <div class="dev-checklist">
+          <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">PM2 процесс &mdash; запущен</div><div class="dev-check-status ok">OK</div></div>
+          <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">.env &mdash; существует</div><div class="dev-check-status ok">OK</div></div>
+          <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">.gitignore &mdash; существует</div><div class="dev-check-status ok">OK</div></div>
+          <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">Git remote &mdash; настроен</div><div class="dev-check-status ok">OK</div></div>
+          <div class="dev-check-item"><div class="dev-check-icon ok">&#10003;</div><div class="dev-check-label">HTTP доступ &mdash; OK</div><div class="dev-check-status ok">OK</div></div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="dev-block auto" id="devBlock15" data-block="15">
+      <div class="dev-block-accent auto"></div>
+      <div class="dev-block-bg auto"></div>
+      <div class="dev-block-header">
+        <div class="dev-block-header-left">
+          <div class="dev-block-icon">&#9889;</div>
+          <div><div class="dev-block-num">БЛОК 15 &middot;</div><div class="dev-block-type">AUTO</div><div class="dev-block-title">Автодеплой Webhook</div></div>
+        </div>
+        <button class="dev-block-done-btn" onclick="devToggleDone(15, this)">Отметить &check;</button>
+      </div>
+      <div class="dev-block-body">
+        <div class="info-box info"><div class="icon">&#9432;</div><p>Pipeline: git push &rarr; GitHub &rarr; Webhook &rarr; deploy.sh &rarr; PM2 restart &rarr; сайт обновлён</p></div>
+        <div class="dev-yesno"><span class="dev-yesno-label">Настроить автодеплой?</span><span class="dev-yesno-option dev-yesno-yes">Y (по умолчанию)</span><span class="dev-yesno-option dev-yesno-no">N</span></div>
+        <div class="dev-prompt"><span class="dev-prompt-arrow">&gt;</span><span class="dev-prompt-label">Порт для webhook-сервера</span><span class="dev-prompt-default">[9000]</span></div>
+        <div class="dev-flow-inline">
+          <div class="dev-flow-node purple">git push</div><div class="dev-flow-arrow">&rarr;</div>
+          <div class="dev-flow-node green">GitHub</div><div class="dev-flow-arrow">&rarr;</div>
+          <div class="dev-flow-node green">Webhook</div><div class="dev-flow-arrow">&rarr;</div>
+          <div class="dev-flow-node green">deploy.sh</div><div class="dev-flow-arrow">&rarr;</div>
+          <div class="dev-flow-node green">PM2 restart</div><div class="dev-flow-arrow">&rarr;</div>
+          <div class="dev-flow-node purple">&#10003; Готово</div>
+        </div>
+        <div class="dev-cols">
+          <div class="dev-col">
+            <div class="dev-col-title">&#128196; Автосозданные файлы</div>
+            <div class="dev-col-content"><code>webhook-server.js</code> &mdash; HTTP-сервер<br><code>deploy.sh</code> &mdash; скрипт обновления<br>PM2 процесс: <code>{name}-webhook</code></div>
+          </div>
+          <div class="dev-col">
+            <div class="dev-col-title">&#128274; GitHub Webhook</div>
+            <div class="dev-col-content">Content type: <code>application/json</code><br>Events: <code>push</code> only<br>Регистрация через GitHub API</div>
+          </div>
+        </div>
+        <div class="info-box warning"><div class="icon">&#9888;</div><p>Если webhook не зарегистрировался &mdash; настройте вручную через GitHub Settings &rarr; Webhooks</p></div>
+      </div>
+    </div>
+
+
+    <!-- Final Summary -->
+    <div class="dev-summary">
+      <div class="dev-summary-title">&#127775; Деплой завершён!</div>
+      <div class="dev-flow-inline">
+        <div class="dev-flow-node purple">git push</div><div class="dev-flow-arrow">&rarr;</div>
+        <div class="dev-flow-node green">GitHub</div><div class="dev-flow-arrow">&rarr;</div>
+        <div class="dev-flow-node green">Webhook</div><div class="dev-flow-arrow">&rarr;</div>
+        <div class="dev-flow-node green">deploy.sh</div><div class="dev-flow-arrow">&rarr;</div>
+        <div class="dev-flow-node green">PM2 restart</div><div class="dev-flow-arrow">&rarr;</div>
+        <div class="dev-flow-node purple">&#10003; Готово</div>
+      </div>
+      <table class="dev-commands-table">
+        <thead><tr><th>#</th><th>Действие</th><th>Команда</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Обновить сайт вручную</td><td><code>cd /var/www/my-project && bash deploy.sh</code></td></tr>
+          <tr><td>2</td><td>Перезапустить PM2</td><td><code>pm2 restart my-project</code></td></tr>
+          <tr><td>3</td><td>Перезапустить Nginx</td><td><code>sudo systemctl restart nginx</code></td></tr>
+          <tr><td>4</td><td>Проверить логи</td><td><code>pm2 logs my-project --lines 20</code></td></tr>
+          <tr><td>5</td><td>Автодеплой через git push</td><td><code>git add . && git commit -m "changes" && git push</code></td></tr>
+          <tr><td>6</td><td>Подключение коллеги</td><td><code>git clone ... && npm install && cp .env.example .env && npx prisma migrate dev</code></td></tr>
+        </tbody>
+      </table>
+      <div class="dev-cols">
+        <div class="dev-col">
+          <div class="dev-col-title">&#10003; В Git (на GitHub)</div>
+          <div class="dev-col-content"><code>src/</code>, <code>prisma/</code>, <code>public/</code><br><code>package.json</code>, <code>next.config.ts</code><br><code>.env.example</code></div>
+        </div>
+        <div class="dev-col">
+          <div class="dev-col-title">&#128274; Только на VDS (не в Git)</div>
+          <div class="dev-col-content"><code>.env</code> &mdash; секреты и ключи<br><code>*.db</code> &mdash; база данных<br><code>ecosystem.config.js</code>, <code>webhook-server.js</code><br><code>deploy.sh</code>, логи</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">AutoDeploy &mdash; Автоматический деплой нейросайтов на VDS</div>
+
+<!-- Scroll top -->
+<button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#9650;</button>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
+
+// Scroll to top
+var scrollBtn = document.getElementById('scrollTopBtn');
+window.addEventListener('scroll', function() {
+  scrollBtn.classList.toggle('visible', window.scrollY > 400);
+});
+
+// Copy single command
+function copySingleCmd(btn, text) {
+  navigator.clipboard.writeText(text).then(function() {
+    btn.classList.add('copied');
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Скопировано';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Копировать';
+    }, 2000);
+  });
+}
+
+// ===== DEVELOPER TAB LOGIC =====
+var DEV_KEY = 'autodeploy_progress';
+var currentBlock = 1;
+var totalBlocks = 15;
+
+function getDoneBlocks() {
+  try {
+    var data = localStorage.getItem(DEV_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch(e) { return {}; }
+}
+
+function saveDoneBlocks(blocks) {
+  try { localStorage.setItem(DEV_KEY, JSON.stringify(blocks)); } catch(e) {}
+}
+
+function devUpdateProgress() {
+  var done = getDoneBlocks();
+  var count = Object.keys(done).filter(function(k) { return done[k]; }).length;
+  document.getElementById('devProgressText').textContent = count + ' / ' + totalBlocks;
+  document.getElementById('devProgressFill').style.width = (count / totalBlocks * 100) + '%';
+
+  // Update step dots
+  document.querySelectorAll('.dev-step-dot').forEach(function(dot) {
+    var num = dot.dataset.block;
+    dot.classList.remove('done', 'active', 'pending');
+    if (done[num]) {
+      dot.classList.add('done');
+      dot.textContent = '✓';
+    } else if (parseInt(num) === currentBlock) {
+      dot.classList.add('active');
+    } else {
+      dot.classList.add('pending');
+    }
+  });
+
+  // Update done buttons
+  document.querySelectorAll('.dev-block-done-btn').forEach(function(btn) {
+    var block = btn.closest('.dev-block');
+    var num = block.dataset.block;
+    if (done[num]) {
+      btn.classList.add('is-done');
+      btn.textContent = '✓ Выполнено';
+    } else {
+      btn.classList.remove('is-done');
+      btn.textContent = 'Отметить ✓';
+    }
+  });
+}
+
+function devToggleDone(num, btn) {
+  var done = getDoneBlocks();
+  if (done[num]) {
+    delete done[num];
+  } else {
+    done[num] = true;
+    for (var i = num + 1; i <= totalBlocks; i++) {
+      if (!done[i]) { currentBlock = i; break; }
+    }
+  }
+  saveDoneBlocks(done);
+  devUpdateProgress();
+  devScrollToBlock(currentBlock);
+}
+
+function devScrollToBlock(num) {
+  currentBlock = num;
+  var el = document.getElementById('devBlock' + num);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  devUpdateProgress();
+}
+
+function devResetProgress() {
+  if (confirm('Сбросить прогресс всех блоков?')) {
+    localStorage.removeItem(DEV_KEY);
+    currentBlock = 1;
+    devUpdateProgress();
+  }
+}
+
+function devCopyRun(btn) {
+  navigator.clipboard.writeText('cd /var/www && python3 autodeploy.py').then(function() {
+    btn.classList.add('copied');
+    btn.innerHTML = '&#10003; Скопировано';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.innerHTML = '&#128203; Копировать';
+    }, 2000);
+  });
+}
+
+function devCopyCode(btn) {
+  var body = btn.closest('.dev-code').querySelector('.dev-code-body');
+  navigator.clipboard.writeText(body.textContent).then(function() {
+    btn.classList.add('copied');
+    btn.innerHTML = '&#10003; Скопировано';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.innerHTML = '&#128203; Копировать';
+    }, 2000);
+  });
+}
+
+// Intersection Observer for auto-updating active block
+function devSetupObserver() {
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var num = parseInt(entry.target.dataset.block);
+        if (num && num !== currentBlock) {
+          currentBlock = num;
+          devUpdateProgress();
+        }
+      }
+    });
+  }, { threshold: 0.3, rootMargin: '-80px 0px -50% 0px' });
+
+  document.querySelectorAll('.dev-block').forEach(function(block) {
+    observer.observe(block);
+  });
+}
+
+// Init
+devUpdateProgress();
+devSetupObserver();
+</script>
+
+</body>
+</html>
