@@ -1563,17 +1563,62 @@ class DeployExecutor:
         github_token = self.ctx.get("github_token", "")
         git_branch = self.ctx.get("git_branch", "main")
 
-        # Убеждаемся, что .env НЕ отслеживается git
+        # Убеждаемся, что .env и другие серверные файлы НЕ отслеживаются git
         # (git rm --cached удаляет из индекса, но оставляет файл на диске)
-        rc_tracked, out_tracked, _ = run_cmd(
-            f"cd {site_path} && git ls-files .env .env.local .env.production"
-        )
-        if out_tracked.strip():
-            for env_file in out_tracked.strip().split('\n'):
-                env_file = env_file.strip()
-                if env_file:
-                    run_cmd(f"cd {site_path} && git rm --cached {env_file} 2>/dev/null")
-                    console.print(f"  [yellow]Удалён из git: {env_file} (файл остаётся на диске)[/yellow]")
+        # ВАЖНО: нейронка может случайно закоммитить .env с путями от нейронки
+        # (например /home/z/my-project/), что при git reset --hard перезапишет
+        # серверный .env. Поэтому всегда убираем эти файлы из отслеживания.
+        _untrack_files = [
+            ".env", ".env.local", ".env.production", ".env.webhook",
+            "ecosystem.config.js", "Caddyfile", "worklog.md",
+        ]
+        _untrack_dirs = ["db/", "upload/", "tool-results/", "logs/", "tmp/"]
+        
+        # Проверяем и убираем отдельные файлы
+        for _uf in _untrack_files:
+            rc_t, out_t, _ = run_cmd(f"cd {site_path} && git ls-files {_uf}")
+            if out_t.strip():
+                run_cmd(f"cd {site_path} && git rm --cached {_uf} 2>/dev/null")
+                console.print(f"  [yellow]Удалён из git: {_uf} (файл остаётся на диске)[/yellow]")
+        
+        # Проверяем и убираем директории
+        for _ud in _untrack_dirs:
+            rc_t, out_t, _ = run_cmd(f"cd {site_path} && git ls-files {_ud}")
+            if out_t.strip():
+                run_cmd(f"cd {site_path} && git rm -r --cached {_ud} 2>/dev/null")
+                console.print(f"  [yellow]Удалена из git: {_ud}/ (файлы остаются на диске)[/yellow]")
+        
+        # Убежимся, что .gitignore содержит все нужные записи
+        _gitignore_path = os.path.join(site_path, ".gitignore")
+        _required_gitignore = [
+            ".env*", "db/", "ecosystem.config.js", "upload/",
+            "tool-results/", "Caddyfile", "worklog.md", "logs/", "tmp/",
+        ]
+        if os.path.exists(_gitignore_path):
+            try:
+                with open(_gitignore_path, "r") as f:
+                    _gi_content = f.read()
+                _gi_modified = False
+                for _entry in _required_gitignore:
+                    if _entry not in _gi_content:
+                        _gi_content += f"\n{_entry}"
+                        _gi_modified = True
+                if _gi_modified:
+                    with open(_gitignore_path, "w") as f:
+                        f.write(_gi_content)
+                    console.print("  [cyan].gitinfo updated with missing entries[/cyan]")
+            except Exception:
+                pass
+        
+        # Создаём .env.server-backup для восстановления при будущих деплоях
+        _env_path = os.path.join(site_path, ".env")
+        _backup_path = os.path.join(site_path, ".env.server-backup")
+        if os.path.exists(_env_path):
+            try:
+                import shutil
+                shutil.copy2(_env_path, _backup_path)
+            except Exception:
+                pass
 
         rc, _, err = run_cmd(f"cd {site_path} && git add -A")
         if rc != 0:
